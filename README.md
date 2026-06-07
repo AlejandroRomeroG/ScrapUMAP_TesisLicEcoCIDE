@@ -16,6 +16,7 @@ El proyecto usa Parquet como formato único de datos tabulares persistidos.
 - `ScrapingTesisLicEcoCIDE.qmd`: scraping, extracción de metadatos, limpieza básica y normalización de asesores.
 - `mapa_semantico_tesis.ipynb`: lectura del Parquet canónico, embeddings, UMAP, K-Means, visualizaciones y exportación de clusters.
 - `data-raw/asesores_alias.csv`: tabla editable de alias para normalizar nombres de asesores.
+- `data-quality/asesores_sin_alias.csv`: reporte generado con asesores que aún no tienen alias explícito.
 - `tesis_lic_economia_cide.parquet`: base canónica de tesis.
 - `clusters_tesis.parquet`: tesis con cluster y coordenadas UMAP.
 - `clusters_resumen.parquet`: conteo de tesis por cluster.
@@ -68,4 +69,4 @@ make clusters
 
 - La paginación del scraper no asume un número fijo de tesis; avanza hasta que el repositorio deja de devolver resultados.
 - El clustering actual usa K-Means sobre las coordenadas UMAP 2D. Sirve para exploración, pero conviene validar la estabilidad de clusters antes de usarlo como clasificación sustantiva.
-- La columna `asesor_unificado` reduce variantes textuales del nombre de asesor usando `data-raw/asesores_alias.csv`. Si el repositorio cambia o se agregan nuevas tesis, ampliar esa tabla y volver a correr `make scrape` antes de interpretar redes de asesoría.
+- La columna `asesor_unificado` reduce variantes textuales del nombre de asesor usando `data-raw/asesores_alias.csv`. Si el repositorio cambia o se agregan nuevas tesis, revisar `data-quality/asesores_sin_alias.csv`, ampliar la tabla de alias y volver a correr `make scrape` antes de interpretar redes de asesoría.

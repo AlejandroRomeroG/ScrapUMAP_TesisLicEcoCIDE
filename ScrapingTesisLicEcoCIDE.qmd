@@ -235,14 +235,41 @@ if (nrow(conflicting_aliases) > 0) {
 advisor_aliases <- advisor_aliases %>%
   distinct(advisor_raw, advisor_canonical)
 
+advisor_quality_dir <- "data-quality"
+unmapped_advisors_path <- file.path(advisor_quality_dir, "asesores_sin_alias.csv")
+
 unmapped_advisors <- tesis_meta_unica %>%
-  distinct(asesor) %>%
   filter(!is.na(asesor), !(asesor %in% advisor_aliases$advisor_raw)) %>%
-  arrange(asesor)
+  group_by(advisor_raw = asesor) %>%
+  summarise(
+    n_tesis = n(),
+    anio_min = if (all(is.na(anio_pub_meta))) NA_integer_ else min(anio_pub_meta, na.rm = TRUE),
+    anio_max = if (all(is.na(anio_pub_meta))) NA_integer_ else max(anio_pub_meta, na.rm = TRUE),
+    ejemplo_titulo = first(titulo_meta[!is.na(titulo_meta) & titulo_meta != ""], default = NA_character_),
+    advisor_canonical_sugerido = "",
+    notas = "",
+    .groups = "drop"
+  ) %>%
+  arrange(desc(n_tesis), advisor_raw)
+
+dir.create(advisor_quality_dir, recursive = TRUE, showWarnings = FALSE)
+
+write.csv(
+  unmapped_advisors,
+  unmapped_advisors_path,
+  row.names = FALSE,
+  fileEncoding = "UTF-8",
+  na = ""
+)
 
 if (nrow(unmapped_advisors) > 0) {
   message("Asesores sin regla explícita de alias: ", nrow(unmapped_advisors))
 }
+
+message(
+  "Reporte de asesores sin alias explícito: ",
+  normalizePath(unmapped_advisors_path, mustWork = FALSE)
+)
 
 tesis_meta_unica <- tesis_meta_unica %>%
   left_join(advisor_aliases, by = c("asesor" = "advisor_raw")) %>%
