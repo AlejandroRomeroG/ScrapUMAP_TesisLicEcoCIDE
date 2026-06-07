@@ -21,7 +21,7 @@ El proyecto usa Parquet como formato único de datos tabulares persistidos.
 - `embeddings_tesis.parquet`: cache de embeddings por tesis y modelo.
 - `model_benchmark.parquet`: comparación local de modelos multilingües candidatos.
 - `clusters_tesis.parquet`: tesis con cluster y coordenadas UMAP.
-- `clusters_resumen.parquet`: resumen enriquecido por cluster, con keywords, tesis representativas y asesores principales.
+- `clusters_resumen.parquet`: resumen enriquecido por cluster, con nombre temático, keywords, tesis representativas y asesores principales.
 - `cluster_diagnostics.parquet`: métricas para elegir número de clusters.
 - `cluster_anio.parquet`: evolución temporal de clusters por año.
 - `cluster_idioma.parquet`: distribución de idioma por cluster.
@@ -79,4 +79,5 @@ make clusters
 - El clustering actual usa K-Means sobre embeddings multilingües; UMAP se usa como layout visual. La notebook exporta diagnósticos para revisar el número de clusters antes de usarlos como clasificación sustantiva.
 - El modelo de embeddings por defecto es `sentence-transformers/paraphrase-multilingual-mpnet-base-v2`. Es más pesado que MiniLM, pero en el benchmark local produjo mejor cohesión semántica y menor dependencia del idioma. Puedes probar otro modelo con `ST_MODEL_NAME=... make clusters`.
 - El número de clusters queda configurado en `ST_CLUSTER_K` y por defecto usa `11`, para evitar soluciones demasiado gruesas aunque el máximo de silhouette favorezca menos grupos.
+- Los clusters tienen dos identificadores: `cluster_label` conserva el id técnico y `cluster_theme` contiene el nombre interpretativo basado en keywords.
 - La columna `asesor_unificado` reduce variantes textuales del nombre de asesor usando `data-raw/asesores_alias.csv`. Si el repositorio cambia o se agregan nuevas tesis, revisar `data-quality/asesores_sin_alias.csv`, ampliar la tabla de alias y volver a correr `make scrape` antes de interpretar redes de asesoría.
