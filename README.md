@@ -9,7 +9,7 @@ El proyecto usa Parquet como formato único de datos tabulares persistidos.
 1. Ejecutar `ScrapingTesisLicEcoCIDE.qmd`.
 2. Generar `tesis_lic_economia_cide.parquet`.
 3. Ejecutar `mapa_semantico_tesis.ipynb`.
-4. Generar `clusters_tesis.parquet` y `clusters_resumen.parquet`.
+4. Generar `clusters_tesis.parquet`, `clusters_resumen.parquet` y `semantic_dashboard.html`.
 
 ## Archivos Principales
 
@@ -19,6 +19,7 @@ El proyecto usa Parquet como formato único de datos tabulares persistidos.
 - `data-quality/asesores_sin_alias.csv`: reporte generado con asesores que aún no tienen alias explícito.
 - `tesis_lic_economia_cide.parquet`: base canónica de tesis.
 - `embeddings_tesis.parquet`: cache de embeddings por tesis y modelo.
+- `model_benchmark.parquet`: comparación local de modelos multilingües candidatos.
 - `clusters_tesis.parquet`: tesis con cluster y coordenadas UMAP.
 - `clusters_resumen.parquet`: resumen enriquecido por cluster, con keywords, tesis representativas y asesores principales.
 - `cluster_diagnostics.parquet`: métricas para elegir número de clusters.
@@ -26,6 +27,7 @@ El proyecto usa Parquet como formato único de datos tabulares persistidos.
 - `cluster_idioma.parquet`: distribución de idioma por cluster.
 - `asesor_cluster_resumen.parquet`: cruce asesor-cluster.
 - `asesor_resumen.parquet`: volumen y diversidad temática por asesor.
+- `semantic_dashboard.html`: dashboard interactivo exportado desde la notebook.
 
 ## Dependencias
 
@@ -75,5 +77,6 @@ make clusters
 
 - La paginación del scraper no asume un número fijo de tesis; avanza hasta que el repositorio deja de devolver resultados.
 - El clustering actual usa K-Means sobre embeddings multilingües; UMAP se usa como layout visual. La notebook exporta diagnósticos para revisar el número de clusters antes de usarlos como clasificación sustantiva.
-- El modelo de embeddings por defecto es `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, elegido por ser multilingüe, ligero para CPU y razonable con 8 GB de RAM. Puedes probar otro modelo con `ST_MODEL_NAME=... make clusters`.
+- El modelo de embeddings por defecto es `sentence-transformers/paraphrase-multilingual-mpnet-base-v2`. Es más pesado que MiniLM, pero en el benchmark local produjo mejor cohesión semántica y menor dependencia del idioma. Puedes probar otro modelo con `ST_MODEL_NAME=... make clusters`.
+- El número de clusters queda configurado en `ST_CLUSTER_K` y por defecto usa `11`, para evitar soluciones demasiado gruesas aunque el máximo de silhouette favorezca menos grupos.
 - La columna `asesor_unificado` reduce variantes textuales del nombre de asesor usando `data-raw/asesores_alias.csv`. Si el repositorio cambia o se agregan nuevas tesis, revisar `data-quality/asesores_sin_alias.csv`, ampliar la tabla de alias y volver a correr `make scrape` antes de interpretar redes de asesoría.
