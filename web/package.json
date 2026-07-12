@@ -1,0 +1,40 @@
+{
+  "name": "atlas-tesis-cide",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "test:e2e": "playwright test",
+    "check": "npm run lint && npm run build && npm run test:e2e"
+  },
+  "dependencies": {
+    "@deck.gl/core": "^9.3.6",
+    "@deck.gl/layers": "^9.3.6",
+    "@deck.gl/mesh-layers": "^9.3.6",
+    "@deck.gl/react": "^9.3.6",
+    "@fontsource-variable/manrope": "^5.2.8",
+    "@fontsource-variable/space-grotesk": "^5.2.10",
+    "@luma.gl/engine": "^9.3.6",
+    "echarts": "^6.1.0",
+    "lucide-react": "^1.24.0",
+    "motion": "^12.42.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^24.13.2",
+    "@types/pngjs": "^6.0.5",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "oxlint": "^1.71.0",
+    "pngjs": "^7.0.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1"
+  }
+}

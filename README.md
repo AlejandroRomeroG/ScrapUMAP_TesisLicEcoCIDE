@@ -10,11 +10,28 @@ El proyecto usa Parquet como formato único de datos tabulares persistidos.
 2. Generar `tesis_cide.parquet` y `tesis_programas_resumen.parquet`.
 3. Ejecutar `mapa_semantico_tesis.ipynb`.
 4. Generar `clusters_tesis.parquet`, `clusters_resumen.parquet`, los Parquet de variantes de clustering/topic modeling y `semantic_dashboard.html`.
+5. Ejecutar `make web-data` para generar un extracto web validado desde los Parquet y `make web-dev` para abrir el atlas moderno.
+
+## Atlas Web
+
+La experiencia recomendada vive en `web/`: una aplicación responsive con mapa WebGL 2D/3D, película temporal, matrices por programa, territorios temáticos y perfiles de profesorado. Los Parquet siguen siendo la fuente canónica; `scripts/export_web_data.py` genera únicamente las columnas necesarias para el navegador y detiene el build si no reconcilian identificadores, conteos o participaciones.
+
+**Sitio público:** [Atlas de Tesis CIDE](https://alejandroromerog.github.io/ScrapUMAP_TesisLicEcoCIDE/)
+
+```bash
+make web-install
+make web-build
+make web-dev
+```
+
+El frontend usa React 19, TypeScript, Vite, deck.gl, Apache ECharts, Motion y Lucide. `make web-check` ejecuta lint, build y pruebas Playwright desktop/móvil con comprobación de canvases.
 
 ## Archivos Principales
 
 - `ScrapingTesisLicEcoCIDE.qmd`: cosecha OAI-PMH de la comunidad completa de tesis, descubrimiento automático de programas, validación y homologación de profesorado.
 - `mapa_semantico_tesis.ipynb`: lectura del Parquet canónico, embeddings multilingües, UMAP, diagnóstico de clusters, visualizaciones y exportación de resultados analíticos.
+- `scripts/export_web_data.py`: exportación compacta y reconciliada de los Parquet al contrato de datos del navegador.
+- `web/`: aplicación interactiva moderna y pruebas end-to-end.
 - `data-raw/asesores_alias.csv`: tabla editable de alias para normalizar nombres de asesores.
 - `data-raw/asesores_canonicos_merge.csv`: fusiones revisadas entre grupos canónicos de nombres que pertenecen a la misma persona.
 - `data-raw/topic_keyword_aliases.csv`: tabla editable de alias bilingües para homologar keywords temáticas en español e inglés.
@@ -50,7 +67,7 @@ El proyecto usa Parquet como formato único de datos tabulares persistidos.
 - `programa_anio.parquet`: producción anual por nivel y programa.
 - `asesor_cluster_resumen.parquet`: cruce asesor-cluster.
 - `asesor_resumen.parquet`: volumen y diversidad temática por asesor.
-- `semantic_dashboard.html`: dashboard interactivo exportado desde la notebook.
+- `semantic_dashboard.html`: dashboard metodológico autocontenido exportado desde la notebook; se conserva como respaldo analítico.
 
 ## Dependencias
 
@@ -94,6 +111,8 @@ También puedes usar:
 ```bash
 make scrape
 make clusters
+make web-build
+make web-dev
 ```
 
 ## Notas Metodológicas
