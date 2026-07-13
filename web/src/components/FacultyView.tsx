@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { Search, Users, X } from 'lucide-react'
-import type { EChartsCoreOption } from 'echarts/core'
-import { EChart } from './EChart'
+import { EChart, type ResponsiveChartOption } from './EChart'
 import type { AdvisorSummary, AnalyticsPayload } from '../types'
 import { clusterColor } from '../lib/colors'
 import { formatNumber, formatPercent, normalizeSearch } from '../lib/format'
@@ -35,7 +34,7 @@ export function FacultyView({ analytics }: FacultyViewProps) {
     [analytics.advisorTopics, selected.name],
   )
 
-  const option = useMemo<EChartsCoreOption>(() => {
+  const option = useMemo<ResponsiveChartOption>(() => ({ compact }) => {
     const byCluster = new Map<number, AdvisorSummary[]>()
     for (const advisor of visibleAdvisors) {
       const rows = byCluster.get(advisor.mainClusterId) ?? []
@@ -46,7 +45,12 @@ export function FacultyView({ analytics }: FacultyViewProps) {
       animationDuration: 520,
       animationEasing: 'cubicOut',
       aria: { enabled: true },
-      grid: { left: 62, right: 36, top: 30, bottom: 64 },
+      grid: {
+        left: compact ? 43 : 62,
+        right: compact ? 18 : 36,
+        top: compact ? 22 : 30,
+        bottom: compact ? 48 : 64,
+      },
       tooltip: {
         backgroundColor: '#111815',
         borderWidth: 0,
@@ -59,28 +63,29 @@ export function FacultyView({ analytics }: FacultyViewProps) {
       },
       xAxis: {
         type: 'value',
-        min: 0,
+        min: -0.5,
+        max: (value: { max: number }) => Math.ceil(value.max * 1.12 + 2),
         name: 'Tesis asesoradas',
         nameLocation: 'middle',
-        nameGap: 40,
+        nameGap: compact ? 28 : 40,
         axisLine: { lineStyle: { color: '#aeb5ad' } },
         axisTick: { show: false },
-        axisLabel: { color: '#66716b', fontFamily: 'Manrope Variable' },
-        nameTextStyle: { color: '#66716b', fontFamily: 'Manrope Variable' },
+        axisLabel: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: compact ? 9 : 12 },
+        nameTextStyle: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: compact ? 9 : 12 },
         splitLine: { lineStyle: { color: '#e2e5df' } },
       },
       yAxis: {
         type: 'value',
-        min: 0,
-        max: 16,
+        min: -0.7,
+        max: 17,
         interval: 2,
-        name: 'Territorios temáticos',
+        name: compact ? 'Territorios' : 'Territorios temáticos',
         nameLocation: 'middle',
-        nameGap: 42,
+        nameGap: compact ? 28 : 42,
         axisLine: { lineStyle: { color: '#aeb5ad' } },
         axisTick: { show: false },
-        axisLabel: { color: '#66716b', fontFamily: 'Manrope Variable' },
-        nameTextStyle: { color: '#66716b', fontFamily: 'Manrope Variable' },
+        axisLabel: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: compact ? 9 : 12 },
+        nameTextStyle: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: compact ? 9 : 12 },
         splitLine: { lineStyle: { color: '#e2e5df' } },
       },
       series: [...byCluster.entries()].map(([clusterId, advisors]) => ({
@@ -94,7 +99,10 @@ export function FacultyView({ analytics }: FacultyViewProps) {
           advisor.mainClusterId,
           advisor.mainCluster,
         ]),
-        symbolSize: (value: [number, number, number]) => 7 + Math.sqrt(value[0]) * 2.1 + value[2] * 0.65,
+        symbolSize: (value: [number, number, number]) => {
+          const size = 7 + Math.sqrt(value[0]) * 2.1 + value[2] * 0.65
+          return compact ? Math.max(5, size * 0.72) : size
+        },
         itemStyle: {
           color: clusterColor(clusterId),
           borderColor: '#f7f8f4',
@@ -108,10 +116,10 @@ export function FacultyView({ analytics }: FacultyViewProps) {
           distance: 6,
           color: '#25302a',
           fontFamily: 'Manrope Variable',
-          fontSize: 10,
+          fontSize: compact ? 8 : 10,
           formatter: (params: unknown) => {
             const value = (params as AdvisorClick).value
-            return value && value[0] >= 37 ? value[3] : ''
+            return value && value[0] >= (compact ? 52 : 37) ? value[3] : ''
           },
         },
         labelLayout: { hideOverlap: true, moveOverlap: 'shiftY' },

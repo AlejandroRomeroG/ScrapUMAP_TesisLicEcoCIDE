@@ -211,8 +211,8 @@
 }
 
 .view-transition {
-  height: calc(100vh - 112px);
-  min-height: 620px;
+  height: calc(100dvh - 112px);
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -897,7 +897,7 @@
   min-width: 0;
   min-height: 0;
   padding: 16px 18px 18px;
-  overflow: auto;
+  overflow: hidden;
   background: var(--paper);
 }
 
@@ -930,7 +930,7 @@
 
 .chart-scroll {
   width: 100%;
-  overflow-x: auto;
+  overflow: hidden;
 }
 
 .echart {
@@ -938,15 +938,15 @@
 }
 
 .program-chart {
-  min-width: 860px;
-  height: 720px;
+  min-width: 0;
+  height: clamp(320px, calc(100dvh - 270px), 720px);
 }
 
 .topic-chart,
 .faculty-chart {
-  min-width: 680px;
-  height: min(500px, calc(100vh - 290px));
-  min-height: 360px;
+  min-width: 0;
+  height: clamp(300px, calc(100dvh - 290px), 500px);
+  min-height: 0;
 }
 
 .metric-strip {
@@ -1432,8 +1432,8 @@
   }
 
   .map-stage {
-    height: 62vh;
-    min-height: 520px;
+    height: calc(100dvh - 228px);
+    min-height: 240px;
   }
 
   .map-context,
@@ -1449,12 +1449,14 @@
   }
 
   .chart-region {
-    min-height: 620px;
+    min-height: 0;
+    overflow: visible;
   }
 
+  .program-chart,
   .topic-chart,
   .faculty-chart {
-    height: 480px;
+    height: clamp(240px, calc(100dvh - 312px), 500px);
   }
 }
 
@@ -1507,8 +1509,12 @@
   }
 
   .map-stage {
-    height: 58vh;
-    min-height: 480px;
+    height: calc(100dvh - 280px);
+    min-height: 220px;
+  }
+
+  .map-view:has(.filter-band) .map-stage {
+    height: calc(100dvh - 346px);
   }
 
   .map-readout {
@@ -1559,8 +1565,14 @@
   }
 
   .chart-region {
-    min-height: 580px;
+    min-height: 0;
     padding: 14px 12px 18px;
+  }
+
+  .program-chart,
+  .topic-chart,
+  .faculty-chart {
+    height: clamp(220px, calc(100dvh - 350px), 480px);
   }
 
   .chart-heading > span {
@@ -1580,6 +1592,65 @@
   .side-navigation nav button {
     gap: 3px;
     font-size: 0.56rem;
+  }
+}
+
+@media (max-width: 900px) and (max-height: 600px) and (orientation: landscape) {
+  .app-header {
+    min-height: 76px;
+  }
+
+  .view-title {
+    min-height: 76px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .view-title h1 {
+    font-size: 1.24rem;
+  }
+
+  .view-title p {
+    display: none;
+  }
+
+  .view-transition,
+  .map-view,
+  .analysis-view {
+    min-height: calc(100dvh - 142px);
+  }
+
+  .map-stage {
+    height: calc(100dvh - 200px);
+    min-height: 150px;
+  }
+
+  .map-view:has(.filter-band) .map-stage {
+    height: calc(100dvh - 266px);
+  }
+
+  .analysis-toolbar {
+    min-height: 58px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+
+  .chart-heading {
+    min-height: 38px;
+  }
+
+  .program-chart,
+  .topic-chart,
+  .faculty-chart {
+    height: max(130px, calc(100dvh - 288px));
+  }
+}
+
+@media (max-width: 360px) {
+  .program-chart,
+  .topic-chart,
+  .faculty-chart {
+    height: max(180px, calc(100dvh - 378px));
   }
 }
 

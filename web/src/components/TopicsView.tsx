@@ -1,8 +1,7 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import { motion } from 'motion/react'
 import { ArrowRight, Sparkles } from 'lucide-react'
-import type { EChartsCoreOption } from 'echarts/core'
-import { EChart } from './EChart'
+import { EChart, type ResponsiveChartOption } from './EChart'
 import type { AnalyticsPayload } from '../types'
 import { CLUSTER_COLORS, alphaColor, clusterColor } from '../lib/colors'
 import { formatCoefficient, formatNumber, formatPercent } from '../lib/format'
@@ -20,11 +19,16 @@ export function TopicsView({ analytics }: TopicsViewProps) {
   const [selectedId, setSelectedId] = useState(initialCluster.id)
   const selected = analytics.clusters.find((cluster) => cluster.id === selectedId) ?? initialCluster
 
-  const option = useMemo<EChartsCoreOption>(() => ({
+  const option = useMemo<ResponsiveChartOption>(() => ({ compact }) => ({
     animationDuration: 560,
     animationEasing: 'cubicOut',
     aria: { enabled: true },
-    grid: { left: 62, right: 32, top: 34, bottom: 68 },
+    grid: {
+      left: compact ? 44 : 62,
+      right: compact ? 14 : 32,
+      top: compact ? 24 : 34,
+      bottom: compact ? 52 : 68,
+    },
     tooltip: {
       backgroundColor: '#111815',
       borderWidth: 0,
@@ -38,43 +42,45 @@ export function TopicsView({ analytics }: TopicsViewProps) {
     xAxis: {
       type: 'value',
       scale: true,
-      name: 'Año promedio de publicación',
+      name: compact ? 'Año promedio' : 'Año promedio de publicación',
       nameLocation: 'middle',
-      nameGap: 42,
-      min: (value: { min: number }) => Math.floor(value.min) - 1,
-      max: (value: { max: number }) => Math.ceil(value.max) + 1,
+      nameGap: compact ? 30 : 42,
+      min: (value: { min: number }) => Math.floor(value.min) - (compact ? 2 : 1),
+      max: (value: { max: number }) => Math.ceil(value.max) + (compact ? 2 : 1),
       axisLine: { lineStyle: { color: '#aeb5ad' } },
       axisTick: { show: false },
       axisLabel: {
         color: '#66716b',
         fontFamily: 'Manrope Variable',
+        fontSize: compact ? 9 : 12,
         formatter: (value: number) => String(Math.round(value)),
       },
-      nameTextStyle: { color: '#66716b', fontFamily: 'Manrope Variable' },
+      nameTextStyle: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: compact ? 9 : 12 },
       splitLine: { lineStyle: { color: '#e2e5df' } },
     },
     yAxis: {
       type: 'value',
-      min: 0,
-      max: 1,
-      name: 'Interdisciplinariedad',
+      min: compact ? -0.08 : -0.04,
+      max: compact ? 1.08 : 1.04,
+      name: compact ? 'Interdisciplina' : 'Interdisciplinariedad',
       nameLocation: 'middle',
-      nameGap: 46,
+      nameGap: compact ? 30 : 46,
       axisLine: { lineStyle: { color: '#aeb5ad' } },
       axisTick: { show: false },
       axisLabel: {
         color: '#66716b',
         fontFamily: 'Manrope Variable',
+        fontSize: compact ? 9 : 12,
         formatter: (value: number) => formatCoefficient(value, 1),
       },
-      nameTextStyle: { color: '#66716b', fontFamily: 'Manrope Variable' },
+      nameTextStyle: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: compact ? 9 : 12 },
       splitLine: { lineStyle: { color: '#e2e5df' } },
     },
     series: analytics.clusters.map((cluster) => ({
       name: cluster.theme,
       type: 'scatter',
       data: [[cluster.yearMean, cluster.interdisciplinarity, cluster.count, cluster.id, cluster.theme]],
-      symbolSize: Math.max(25, Math.sqrt(cluster.count) * 4.4),
+      symbolSize: Math.max(compact ? 18 : 25, Math.sqrt(cluster.count) * (compact ? 3.35 : 4.4)),
       itemStyle: {
         color: clusterColor(cluster.id),
         borderColor: selectedId === cluster.id ? '#111815' : '#f7f8f4',
@@ -87,7 +93,7 @@ export function TopicsView({ analytics }: TopicsViewProps) {
         color: '#ffffff',
         fontFamily: 'Space Grotesk Variable',
         fontWeight: 700,
-        fontSize: 10,
+        fontSize: compact ? 8 : 10,
         formatter: String(cluster.id).padStart(2, '0'),
       },
       emphasis: { scale: 1.12 },

@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { ArrowRight, Grid3X3, Share2 } from 'lucide-react'
-import type { EChartsCoreOption } from 'echarts/core'
-import { EChart } from './EChart'
+import { EChart, type ResponsiveChartOption } from './EChart'
 import type { AnalyticsPayload, ProgramSummary } from '../types'
 import { clusterColor } from '../lib/colors'
 import { formatCoefficient, formatNumber, formatPercent, shortProgram } from '../lib/format'
@@ -42,10 +41,12 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
   const programLabels = orderedPrograms.map(programAxisLabel)
   const clusters = [...analytics.clusters].sort((a, b) => a.id - b.id)
 
-  const profileOption = useMemo<EChartsCoreOption>(() => {
+  const profileOption = useMemo<ResponsiveChartOption>(() => ({ width, compact }) => {
     const matrix = new Map(
       analytics.programMatrix.map((datum) => [`${datum.degreeProgram}|${datum.clusterId}`, datum]),
     )
+    const medium = width < 820
+    const gridLeft = compact ? 76 : medium ? 154 : 245
     const values = orderedPrograms.flatMap((program, y) => clusters.map((cluster, x) => {
       const datum = matrix.get(`${program.degreeProgram}|${cluster.id}`)
       return [x, y, datum?.programShare ?? 0, datum?.count ?? 0, program.degreeProgram, cluster.theme]
@@ -54,7 +55,12 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
       animationDuration: 420,
       animationEasing: 'cubicOut',
       aria: { enabled: true },
-      grid: { left: 245, right: 30, top: 24, bottom: 74 },
+      grid: {
+        left: gridLeft,
+        right: compact ? 8 : 30,
+        top: compact ? 14 : 24,
+        bottom: compact ? 64 : 74,
+      },
       tooltip: {
         trigger: 'item',
         backgroundColor: '#111815',
@@ -72,22 +78,32 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
         splitArea: { show: false },
         axisLine: { lineStyle: { color: '#aeb5ad' } },
         axisTick: { show: false },
-        axisLabel: { color: '#4e5953', fontFamily: 'Manrope Variable', fontSize: 11 },
+        axisLabel: { color: '#4e5953', fontFamily: 'Manrope Variable', fontSize: compact ? 8 : 11 },
       },
       yAxis: {
         type: 'category',
         data: programLabels,
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: '#25302a', fontFamily: 'Manrope Variable', fontSize: 11, width: 220, overflow: 'truncate' },
+        axisLabel: {
+          color: '#25302a',
+          fontFamily: 'Manrope Variable',
+          fontSize: compact ? 8 : medium ? 9 : 11,
+          width: compact ? 66 : medium ? 138 : 220,
+          overflow: 'truncate',
+        },
       },
       visualMap: {
         type: 'piecewise',
         orient: 'horizontal',
-        left: 245,
-        bottom: 5,
+        left: gridLeft,
+        bottom: compact ? 2 : 5,
         dimension: 2,
-        textStyle: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: 10 },
+        itemWidth: compact ? 10 : 14,
+        itemHeight: compact ? 8 : 10,
+        itemGap: compact ? 4 : 10,
+        textGap: compact ? 2 : 5,
+        textStyle: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: compact ? 7 : 10 },
         pieces: [
           { min: 0.2, label: '20%+', color: '#111815' },
           { min: 0.1, max: 0.199999, label: '10–20%', color: '#3f6257' },
@@ -105,10 +121,12 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
     }
   }, [analytics.programMatrix, clusters, orderedPrograms, programLabels])
 
-  const similarityOption = useMemo<EChartsCoreOption>(() => {
+  const similarityOption = useMemo<ResponsiveChartOption>(() => ({ width, compact }) => {
     const matrix = new Map(
       analytics.programSimilarity.map((datum) => [`${datum.programA}|${datum.programB}`, datum]),
     )
+    const medium = width < 820
+    const gridLeft = compact ? 76 : medium ? 154 : 245
     const values = programNames.flatMap((programA, y) => programNames.map((programB, x) => {
       const datum = matrix.get(`${programA}|${programB}`)
       return [x, y, datum?.similarity ?? 0, programA, programB]
@@ -116,7 +134,12 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
     return {
       animationDuration: 420,
       aria: { enabled: true },
-      grid: { left: 245, right: 30, top: 24, bottom: 155 },
+      grid: {
+        left: gridLeft,
+        right: compact ? 8 : 30,
+        top: compact ? 14 : 24,
+        bottom: compact ? 94 : 155,
+      },
       tooltip: {
         backgroundColor: '#111815',
         borderWidth: 0,
@@ -132,22 +155,39 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
         data: programLabels,
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { rotate: 58, color: '#4e5953', fontFamily: 'Manrope Variable', fontSize: 9, interval: 0 },
+        axisLabel: {
+          rotate: compact ? 52 : 58,
+          color: '#4e5953',
+          fontFamily: 'Manrope Variable',
+          fontSize: compact ? 7 : 9,
+          interval: compact ? 1 : 0,
+          hideOverlap: true,
+        },
       },
       yAxis: {
         type: 'category',
         data: programLabels,
         axisLine: { show: false },
         axisTick: { show: false },
-        axisLabel: { color: '#25302a', fontFamily: 'Manrope Variable', fontSize: 11, width: 220, overflow: 'truncate' },
+        axisLabel: {
+          color: '#25302a',
+          fontFamily: 'Manrope Variable',
+          fontSize: compact ? 8 : medium ? 9 : 11,
+          width: compact ? 66 : medium ? 138 : 220,
+          overflow: 'truncate',
+        },
       },
       visualMap: {
         type: 'piecewise',
         orient: 'horizontal',
-        left: 245,
-        bottom: 10,
+        left: gridLeft,
+        bottom: compact ? 2 : 10,
         dimension: 2,
-        textStyle: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: 10 },
+        itemWidth: compact ? 10 : 14,
+        itemHeight: compact ? 8 : 10,
+        itemGap: compact ? 4 : 10,
+        textGap: compact ? 2 : 5,
+        textStyle: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: compact ? 7 : 10 },
         pieces: [
           { min: 0.9, label: '0.90–1', color: '#0d675a' },
           { min: 0.75, max: 0.899999, label: '0.75–0.90', color: '#4a8c7d' },
