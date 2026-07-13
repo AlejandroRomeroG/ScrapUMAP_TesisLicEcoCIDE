@@ -137,6 +137,32 @@ function mapPadding(size: MapSize, timelineVisible: boolean): FitPadding {
   }
 }
 
+function tooltipPositionStyle(
+  x: number,
+  y: number,
+  size: MapSize,
+  preferredWidth: number,
+): Partial<CSSStyleDeclaration> {
+  const openLeft = x > size.width / 2
+  const openAbove = y > size.height / 2
+  const horizontalRoom = openLeft ? x - 24 : size.width - x - 24
+  const verticalRoom = openAbove ? y - 24 : size.height - y - 24
+  const maxWidth = Math.min(preferredWidth, Math.max(64, horizontalRoom))
+  const maxHeight = Math.max(48, verticalRoom)
+  const offsetX = openLeft ? 'calc(-100% - 12px)' : '12px'
+  const offsetY = openAbove ? 'calc(-100% - 12px)' : '12px'
+  return {
+    transform: `translate(${x}px, ${y}px) translate(${offsetX}, ${offsetY})`,
+    maxWidth: `${maxWidth}px`,
+    maxHeight: `${maxHeight}px`,
+    overflowY: 'auto',
+    overflowWrap: 'anywhere',
+    whiteSpace: 'pre-line',
+    boxSizing: 'border-box',
+    zIndex: '30',
+  }
+}
+
 function fitView(bounds: MapBounds, size: MapSize, mode: MapMode, timelineVisible: boolean) {
   const width = Math.max(1, size.width)
   const height = Math.max(1, size.height)
@@ -328,7 +354,7 @@ export function SemanticMap({
           id: 'cluster-centroids-2d',
           data: visibleClusters,
           coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
-          getPosition: (cluster) => [cluster.centroid[0], cluster.centroid[1], 0.01],
+          getPosition: (cluster) => [cluster.centroid[0], cluster.centroid[1], 0],
           getFillColor: [247, 248, 243, 210],
           getLineColor: (cluster) => clusterColorRgb(cluster.id, 230),
           getRadius: 12,
@@ -370,24 +396,22 @@ export function SemanticMap({
       getPosition: (cluster) => [
         cluster.centroid[0],
         cluster.centroid[1],
-        mode === '3d' ? cluster.centroid[2] + 0.18 : 0.02,
+        mode === '3d' ? cluster.centroid[2] + 0.18 : 0,
       ],
       getText: (cluster) => String(cluster.id).padStart(2, '0'),
       getColor: mode === '3d' ? [255, 255, 255, 255] : [17, 24, 21, 255],
-      getSize: mode === '3d' ? 11 : 10,
+      getSize: 11,
       sizeUnits: 'pixels',
       fontFamily: 'Manrope Variable, sans-serif',
       fontWeight: 700,
-      fontSettings: mode === '3d'
-        ? { sdf: true, fontSize: 64, buffer: 4 }
-        : { sdf: false },
-      outlineWidth: mode === '3d' ? 1.8 : 0,
-      outlineColor: [17, 24, 21, 210],
+      fontSettings: { sdf: true, fontSize: 64, buffer: 4 },
+      outlineWidth: mode === '3d' ? 1.8 : 0.8,
+      outlineColor: mode === '3d' ? [17, 24, 21, 210] : [247, 248, 243, 245],
       getTextAnchor: 'middle',
       getAlignmentBaseline: 'center',
       billboard: true,
       pickable: true,
-      parameters: mode === '3d' ? { depthCompare: 'always' } : undefined,
+      parameters: { depthCompare: 'always' },
     })
 
     return [gridLayer, pointLayer, centroidLayer, labelLayer]
@@ -463,7 +487,7 @@ export function SemanticMap({
         initialViewState={initialViewState}
         layers={layers}
         onClick={handleClick}
-        getTooltip={({ object }: PickingInfo<MapObject>) => {
+        getTooltip={({ object, x, y }: PickingInfo<MapObject>) => {
           if (!object) return null
           if (isClusterSummary(object)) {
             return {
@@ -475,9 +499,9 @@ export function SemanticMap({
                 fontSize: '12px',
                 lineHeight: '1.5',
                 borderRadius: '6px',
-                maxWidth: '300px',
                 padding: '10px 12px',
                 borderLeft: `3px solid rgb(${clusterColorRgb(object.id).slice(0, 3).join(',')})`,
+                ...tooltipPositionStyle(x, y, mapSize, 300),
               },
             }
           }
@@ -490,8 +514,9 @@ export function SemanticMap({
               fontSize: '12px',
               lineHeight: '1.45',
               borderRadius: '6px',
-              maxWidth: '320px',
               padding: '10px 12px',
+              borderLeft: '0 solid transparent',
+              ...tooltipPositionStyle(x, y, mapSize, 320),
             },
           }
         }}

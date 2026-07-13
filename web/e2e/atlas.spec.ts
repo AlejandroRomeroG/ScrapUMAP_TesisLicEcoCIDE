@@ -72,6 +72,41 @@ test('desktop atlas renders every analytical surface and animation control', asy
   await expectNoDocumentOverflow(page)
   await saveScreenshot(page, testInfo, 'atlas-desktop-map.png')
 
+  const edgePoint = await page.evaluate(async () => {
+    const response = await fetch('/data/atlas.json')
+    const payload = await response.json()
+    return payload.points.reduce(
+      (rightmost: { x: number; y: number }, point: { x: number; y: number }) => point.x > rightmost.x ? point : rightmost,
+    ) as { x: number; y: number }
+  })
+  const fit = await page.locator('.semantic-map').evaluate((element) => ({
+    zoom: Number((element as HTMLElement).dataset.fitZoom),
+    targetX: Number((element as HTMLElement).dataset.fitTargetX),
+    targetY: Number((element as HTMLElement).dataset.fitTargetY),
+  }))
+  const mapBox = await page.locator('.semantic-map').boundingBox()
+  expect(mapBox).not.toBeNull()
+  const scale = 2 ** fit.zoom
+  await page.mouse.move(
+    mapBox!.x + mapBox!.width / 2 + (edgePoint.x - fit.targetX) * scale,
+    mapBox!.y + mapBox!.height / 2 - (edgePoint.y - fit.targetY) * scale,
+  )
+  await expect(page.locator('.deck-tooltip')).toBeVisible()
+  const tooltipBox = await page.locator('.deck-tooltip').boundingBox()
+  expect(tooltipBox).not.toBeNull()
+  expect(tooltipBox!.x).toBeGreaterThanOrEqual(mapBox!.x - 1)
+  expect(tooltipBox!.y).toBeGreaterThanOrEqual(mapBox!.y - 1)
+  expect(tooltipBox!.x + tooltipBox!.width).toBeLessThanOrEqual(mapBox!.x + mapBox!.width + 1)
+  expect(tooltipBox!.y + tooltipBox!.height).toBeLessThanOrEqual(mapBox!.y + mapBox!.height + 1)
+  await saveScreenshot(page, testInfo, 'atlas-edge-tooltip.png')
+
+  await page.locator('.semantic-map canvas').last().hover()
+  await page.mouse.wheel(0, -650)
+  await page.waitForTimeout(450)
+  await saveScreenshot(page, testInfo, 'atlas-desktop-2d-close.png')
+  await page.reload()
+  await expectCanvasHasContent(page.locator('.semantic-map canvas').last())
+
   await page.getByRole('button', { name: /Crimen, violencia y seguridad/ }).click()
   await expect(page.locator('.map-readout strong')).toHaveText('154')
   await expectCanvasHasContent(page.locator('.semantic-map canvas').last())
