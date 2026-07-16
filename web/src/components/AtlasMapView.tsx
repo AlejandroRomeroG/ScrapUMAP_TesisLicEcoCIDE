@@ -256,10 +256,10 @@ export function AtlasMapView({
         {filtersOpen && (
           <motion.div
             className="filter-band"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
           >
             <label>
               <span>Nivel</span>

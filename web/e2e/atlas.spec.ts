@@ -164,6 +164,18 @@ async function expectFilterTogglePreservesMap(page: Page, token: string) {
 
   await page.getByRole('button', { name: 'Filtros', exact: true }).click()
   await expect(page.locator('.preserved-view.is-active .filter-band')).toBeVisible()
+  const layoutSamples: Array<{ top: number; height: number }> = []
+  for (let sample = 0; sample < 5; sample += 1) {
+    layoutSamples.push(await activeSemanticMap(page).evaluate((element) => {
+      const bounds = element.getBoundingClientRect()
+      return { top: bounds.top, height: bounds.height }
+    }))
+    await page.waitForTimeout(24)
+  }
+  const topRange = Math.max(...layoutSamples.map(({ top }) => top)) - Math.min(...layoutSamples.map(({ top }) => top))
+  const heightRange = Math.max(...layoutSamples.map(({ height }) => height)) - Math.min(...layoutSamples.map(({ height }) => height))
+  expect(topRange).toBeLessThanOrEqual(1)
+  expect(heightRange).toBeLessThanOrEqual(1)
   await page.waitForTimeout(280)
   await expect(canvas).toHaveAttribute('data-filter-token', token)
   await expect.poll(() => readCameraState(page)).toEqual(camera)
