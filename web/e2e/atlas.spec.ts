@@ -184,6 +184,14 @@ async function expectFilterTogglePreservesMap(page: Page, token: string) {
   expect(layoutSamples[0].top).toBeGreaterThan(closedBounds.top)
   expect(Math.abs(layoutSamples[0].height - closedBounds.height)).toBeLessThanOrEqual(1)
   expect(await page.locator('.app-main').evaluate((element) => element.scrollTop)).toBe(closedScrollTop)
+  if ((page.viewportSize()?.width ?? 0) > 900) {
+    const hintBounds = await page.locator('.preserved-view.is-active .map-mode-hint').boundingBox()
+    const bodyBounds = await page.locator('.preserved-view.is-active .map-body').boundingBox()
+    expect(hintBounds).not.toBeNull()
+    expect(bodyBounds).not.toBeNull()
+    expect(hintBounds!.y).toBeGreaterThanOrEqual(bodyBounds!.y)
+    expect(hintBounds!.y + hintBounds!.height).toBeLessThanOrEqual(bodyBounds!.y + bodyBounds!.height + 1)
+  }
   await page.waitForTimeout(280)
   await expect(canvas).toHaveAttribute('data-filter-token', token)
   await expect.poll(() => readCameraState(page)).toEqual(camera)

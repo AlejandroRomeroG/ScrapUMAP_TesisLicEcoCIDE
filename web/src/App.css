@@ -638,6 +638,12 @@
   bottom: 99px;
 }
 
+@media (min-width: 901px) {
+  .map-body.filters-open .map-mode-hint {
+    transform: translateY(calc(-1 * var(--filter-band-height)));
+  }
+}
+
 .timeline-dock {
   position: absolute;
   z-index: 14;
