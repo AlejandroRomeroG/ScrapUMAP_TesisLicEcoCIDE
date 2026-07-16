@@ -3,7 +3,7 @@
 QUARTO ?= $(shell if [ -x .tools/quarto/bin/quarto ]; then echo .tools/quarto/bin/quarto; else echo quarto; fi)
 
 scrape:
-	LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 $(QUARTO) render ScrapingTesisLicEcoCIDE.qmd --execute
+	LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 $(QUARTO) render ScrapingTesisCIDE.qmd --execute
 
 clusters:
 	.venv/bin/jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=-1 --inplace mapa_semantico_tesis.ipynb

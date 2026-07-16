@@ -6,7 +6,7 @@ Proyecto para cosechar las tesis de todas las licenciaturas, maestrías y doctor
 
 El proyecto usa Parquet como formato único de datos tabulares persistidos.
 
-1. Ejecutar `ScrapingTesisLicEcoCIDE.qmd`.
+1. Ejecutar `ScrapingTesisCIDE.qmd`.
 2. Generar `tesis_cide.parquet` y `tesis_programas_resumen.parquet`.
 3. Ejecutar `mapa_semantico_tesis.ipynb`.
 4. Generar `clusters_tesis.parquet`, `clusters_resumen.parquet`, los Parquet de variantes de clustering/topic modeling y `semantic_dashboard.html`.
@@ -16,7 +16,7 @@ El proyecto usa Parquet como formato único de datos tabulares persistidos.
 
 La experiencia recomendada vive en `web/`: una aplicación responsive con mapa WebGL 2D/3D, película temporal, matrices por programa, territorios temáticos, perfiles de profesorado y una vista metodológica completa. Los Parquet siguen siendo la fuente canónica; `scripts/export_web_data.py` genera únicamente las columnas necesarias para el navegador y detiene el build si no reconcilian identificadores, conteos o participaciones.
 
-**Sitio público:** [Atlas de Tesis CIDE](https://alejandroromerog.github.io/ScrapUMAP_TesisLicEcoCIDE/)
+**Sitio público:** [Atlas de Tesis CIDE](https://alejandroromerog.github.io/TesisCIDE/)
 
 ```bash
 make web-install
@@ -28,7 +28,7 @@ El frontend usa React 19, TypeScript, Vite, deck.gl, Apache ECharts, Motion y Lu
 
 ## Archivos Principales
 
-- `ScrapingTesisLicEcoCIDE.qmd`: cosecha OAI-PMH de la comunidad completa de tesis, descubrimiento automático de programas, validación y homologación de profesorado.
+- `ScrapingTesisCIDE.qmd`: cosecha OAI-PMH de la comunidad completa de tesis, descubrimiento automático de programas, validación y homologación de profesorado.
 - `mapa_semantico_tesis.ipynb`: lectura del Parquet canónico, embeddings multilingües, UMAP, diagnóstico de clusters, visualizaciones y exportación de resultados analíticos.
 - `scripts/export_web_data.py`: exportación compacta y reconciliada de los Parquet al contrato de datos del navegador.
 - `web/`: aplicación interactiva moderna y pruebas end-to-end.
@@ -95,7 +95,7 @@ uv pip install --python .venv/bin/python -r requirements.lock.txt
 Con Quarto instalado:
 
 ```bash
-quarto render ScrapingTesisLicEcoCIDE.qmd --execute
+quarto render ScrapingTesisCIDE.qmd --execute
 ```
 
 En esta máquina también hay una instalación local ignorada por git en `.tools/quarto`, y `make scrape` la usa automáticamente si existe.
