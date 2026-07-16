@@ -162,6 +162,38 @@ test('desktop atlas renders every analytical surface and animation control', asy
 
   await expect(page.getByRole('heading', { name: 'Mapa semántico', exact: true })).toBeVisible()
   await expect(page.getByText('2,388').first()).toBeVisible()
+  const brandTypeSizes = await page.locator('.brand-mark').evaluate((element) => ({
+    at: Number.parseFloat(getComputedStyle(element.querySelector('strong')!).fontSize),
+    cide: Number.parseFloat(getComputedStyle(element.querySelector('small')!).fontSize),
+  }))
+  expect(brandTypeSizes.cide).toBe(brandTypeSizes.at)
+  await expect(page.getByRole('link', { name: /Autor Alejandro Romero González/ }))
+    .toHaveAttribute('href', 'https://alejandroromerog.github.io/')
+  const sealStyles = await page.locator('.source-seal').evaluate((element) => {
+    const links = element.querySelectorAll('a')
+    const style = (selector: string, link: Element) => getComputedStyle(link.querySelector(selector)!)
+    return {
+      sourceLabel: style('strong', links[0]).color,
+      authorLabel: style('strong', links[1]).color,
+      sourceValue: getComputedStyle(links[0].querySelector('p')!).color,
+      authorValue: getComputedStyle(links[1].querySelector('p')!).color,
+      sourceMarker: style(':scope > span', links[0]).backgroundColor,
+      authorMarker: style(':scope > span', links[1]).backgroundColor,
+    }
+  })
+  expect(sealStyles.authorLabel).toBe(sealStyles.sourceLabel)
+  expect(sealStyles.authorValue).toBe(sealStyles.sourceValue)
+  expect(sealStyles.authorMarker).toBe(sealStyles.sourceMarker)
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', './favicon.svg?v=at-cide')
+  const favicon = await page.evaluate(async () => {
+    const response = await fetch(new URL('./favicon.svg', window.location.href))
+    const document = new DOMParser().parseFromString(await response.text(), 'image/svg+xml')
+    return [...document.querySelectorAll('text')].map((element) => ({
+      label: element.textContent,
+      size: element.closest('g')?.getAttribute('font-size') ?? element.getAttribute('font-size'),
+    }))
+  })
+  expect(favicon).toEqual([{ label: 'AT', size: '15' }, { label: 'CIDE', size: '15' }])
   await expectCanvasHasContent(activeSemanticCanvas(page))
   await expectNoDocumentOverflow(page)
   await saveScreenshot(page, testInfo, 'atlas-desktop-map.png')
@@ -176,6 +208,11 @@ test('desktop atlas renders every analytical surface and animation control', asy
   await expect(activeMapReadout(page)).toContainText('2,388 tesis en contexto')
   await expectCanvasHasContent(activeSemanticCanvas(page), 6)
   await saveScreenshot(page, testInfo, 'atlas-desktop-search-focus.png')
+  await search.fill('Alejandro Romero')
+  await expect(activeSemanticMap(page)).toHaveAttribute('data-highlight-count', '1')
+  await expect(activeMapReadout(page).locator('strong')).toHaveText('1')
+  await search.fill('Romero, González Alejandro')
+  await expect(activeSemanticMap(page)).toHaveAttribute('data-highlight-count', '1')
   await page.getByRole('button', { name: 'Limpiar búsqueda' }).click()
   await expect(activeSemanticMap(page)).toHaveAttribute('data-highlight-count', '2388')
 

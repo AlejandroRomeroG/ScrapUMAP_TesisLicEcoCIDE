@@ -39,7 +39,19 @@ export function normalizeSearch(value: string): string {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLocaleLowerCase('es-MX')
+    .replace(/[^\p{Letter}\p{Number}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
     .trim()
+}
+
+export function searchTerms(value: string): string[] {
+  const normalized = normalizeSearch(value)
+  return normalized ? normalized.split(' ') : []
+}
+
+export function includesAllSearchTerms(value: string, terms: readonly string[]): boolean {
+  const normalized = normalizeSearch(value)
+  return terms.every((term) => normalized.includes(term))
 }
 
 export function shortProgram(value: string): string {

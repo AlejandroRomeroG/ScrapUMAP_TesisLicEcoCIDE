@@ -34,8 +34,15 @@ interface GridLine {
   target: [number, number, number]
 }
 
+interface CommunityRingSegment extends GridLine {
+  clusterId: number
+}
+
 const ROTATION_ORBIT = -32
 const ROTATION_X = 27
+const COMMUNITY_Z_OFFSET = 0.16
+const COMMUNITY_RING_RADIUS = 0.205
+const COMMUNITY_RING_STEPS = 28
 const THESIS_SPHERE = new SphereGeometry({ id: 'thesis-sphere', radius: 1, nlat: 8, nlong: 12 })
 const COMMUNITY_SPHERE = new SphereGeometry({
   id: 'community-sphere',
@@ -95,6 +102,37 @@ function buildGrid(): GridLine[] {
 }
 
 const GRID_LINES = buildGrid()
+
+function communityPosition(cluster: ClusterSummary): [number, number, number] {
+  return [cluster.centroid[0], cluster.centroid[1], cluster.centroid[2] + COMMUNITY_Z_OFFSET]
+}
+
+function buildCommunityRings(clusters: ClusterSummary[]): CommunityRingSegment[] {
+  const segments: CommunityRingSegment[] = []
+  for (const cluster of clusters) {
+    const [centerX, centerY, centerZ] = communityPosition(cluster)
+    const ringPoint = (plane: 0 | 1 | 2, angle: number): [number, number, number] => {
+      const horizontal = Math.cos(angle) * COMMUNITY_RING_RADIUS
+      const vertical = Math.sin(angle) * COMMUNITY_RING_RADIUS
+      if (plane === 0) return [centerX + horizontal, centerY + vertical, centerZ]
+      if (plane === 1) return [centerX + horizontal, centerY, centerZ + vertical]
+      return [centerX, centerY + horizontal, centerZ + vertical]
+    }
+
+    for (const plane of [0, 1, 2] as const) {
+      for (let step = 0; step < COMMUNITY_RING_STEPS; step += 1) {
+        const startAngle = step / COMMUNITY_RING_STEPS * Math.PI * 2
+        const endAngle = (step + 1) / COMMUNITY_RING_STEPS * Math.PI * 2
+        segments.push({
+          clusterId: cluster.id,
+          source: ringPoint(plane, startAngle),
+          target: ringPoint(plane, endAngle),
+        })
+      }
+    }
+  }
+  return segments
+}
 
 function boundsForPoints(points: ThesisPoint[]): MapBounds {
   if (points.length === 0) {
@@ -341,7 +379,6 @@ export function SemanticMap({
             getLineWidth: [selectedId],
           },
           transitions: {
-            getFillColor: 260,
             getRadius: 260,
           },
         })
@@ -371,10 +408,29 @@ export function SemanticMap({
             getScale: [highlightedIds, selectedId, yearCutoff],
           },
           transitions: {
-            getColor: 260,
             getScale: 260,
           },
         })
+
+    const communityRingLayer = mode === '3d'
+      ? new LineLayer<CommunityRingSegment>({
+          id: 'cluster-rings-3d',
+          data: buildCommunityRings(visibleClusters),
+          coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
+          getSourcePosition: (segment) => segment.source,
+          getTargetPosition: (segment) => segment.target,
+          getColor: (segment) => highlightedClusterIds !== null && !highlightedClusterIds.has(segment.clusterId)
+            ? [126, 135, 130, 72]
+            : clusterColorRgb(segment.clusterId, 245),
+          getWidth: 1.4,
+          widthUnits: 'pixels',
+          widthMinPixels: 1,
+          pickable: false,
+          updateTriggers: {
+            getColor: [highlightedClusterIds],
+          },
+        })
+      : null
 
     const centroidLayer = mode === '2d'
       ? new ScatterplotLayer<ClusterSummary>({
@@ -407,23 +463,17 @@ export function SemanticMap({
           coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
           mesh: COMMUNITY_SPHERE,
           sizeScale: 0.17,
-          getPosition: (cluster) => [
-            cluster.centroid[0],
-            cluster.centroid[1],
-            cluster.centroid[2] + 0.16,
-          ],
+          getPosition: communityPosition,
           getColor: (cluster) => highlightedClusterIds !== null && !highlightedClusterIds.has(cluster.id)
-            ? [126, 135, 130, 60]
-            : clusterColorRgb(cluster.id, 255),
+            ? [234, 237, 232, 118]
+            : [247, 248, 243, 255],
           material: {
-            ambient: 0.38,
-            diffuse: 0.72,
-            shininess: 64,
-            specularColor: [242, 246, 242],
+            ambient: 0.68,
+            diffuse: 0.48,
+            shininess: 42,
+            specularColor: [255, 255, 255],
           },
           pickable: true,
-          autoHighlight: true,
-          highlightColor: [255, 255, 255, 110],
           updateTriggers: {
             getColor: [highlightedClusterIds],
           },
@@ -441,7 +491,7 @@ export function SemanticMap({
       getText: (cluster) => String(cluster.id).padStart(2, '0'),
       getColor: (cluster) => {
         const muted = highlightedClusterIds !== null && !highlightedClusterIds.has(cluster.id)
-        if (mode === '3d') return muted ? [224, 229, 225, 96] : [255, 255, 255, 255]
+        if (mode === '3d') return muted ? [90, 100, 94, 96] : [17, 24, 21, 255]
         return muted ? [90, 100, 94, 96] : [17, 24, 21, 255]
       },
       getSize: 11,
@@ -449,8 +499,8 @@ export function SemanticMap({
       fontFamily: 'Manrope Variable, sans-serif',
       fontWeight: 700,
       fontSettings: { sdf: true, fontSize: 64, buffer: 4 },
-      outlineWidth: mode === '3d' ? 1.8 : 0.8,
-      outlineColor: mode === '3d' ? [17, 24, 21, 210] : [247, 248, 243, 245],
+      outlineWidth: 0.8,
+      outlineColor: [247, 248, 243, 245],
       getTextAnchor: 'middle',
       getAlignmentBaseline: 'center',
       billboard: true,
@@ -461,7 +511,7 @@ export function SemanticMap({
       },
     })
 
-    return [gridLayer, pointLayer, centroidLayer, labelLayer]
+    return [gridLayer, pointLayer, communityRingLayer, centroidLayer, labelLayer]
   }, [highlightedClusterIds, highlightedIds, mode, points, selectedClusterId, selectedId, visibleClusters, yearCutoff])
 
   const view = useMemo(

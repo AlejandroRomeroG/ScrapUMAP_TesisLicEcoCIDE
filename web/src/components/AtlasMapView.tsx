@@ -18,7 +18,7 @@ import type {
   ThesisPoint,
 } from '../types'
 import { clusterColor } from '../lib/colors'
-import { formatNumber, languageLabel, normalizeSearch } from '../lib/format'
+import { formatNumber, includesAllSearchTerms, languageLabel, searchTerms } from '../lib/format'
 
 interface AtlasMapViewProps {
   points: ThesisPoint[]
@@ -73,7 +73,7 @@ export function AtlasMapView({
     [analytics.meta.yearTotals],
   )
 
-  const query = normalizeSearch(filters.query)
+  const queryTerms = useMemo(() => searchTerms(filters.query), [filters.query])
   const structuralPoints = useMemo(
     () => points.filter((point) => (
       (!filters.level || point.level === filters.level)
@@ -83,20 +83,27 @@ export function AtlasMapView({
   )
 
   const searchMatchIds = useMemo(() => {
-    if (!query) return null
+    if (queryTerms.length === 0) return null
     return new Set(
       structuralPoints
-        .filter((point) => normalizeSearch([
+        .filter((point) => [
+          point.id,
           point.title,
           point.author,
           point.advisor ?? '',
+          point.level,
           point.program,
+          point.degreeProgram,
           point.clusterTheme,
           point.subtopic,
-        ].join(' ')).includes(query))
+          point.secondarySubtopic,
+          point.taxonomy,
+          languageLabel(point.language),
+          String(point.year),
+        ].some((value) => includesAllSearchTerms(value, queryTerms)))
         .map((point) => point.id),
     )
-  }, [query, structuralPoints])
+  }, [queryTerms, structuralPoints])
 
   const filteredPoints = useMemo(
     () => structuralPoints.filter((point) => filters.clusterId === null || point.clusterId === filters.clusterId),

@@ -4,7 +4,7 @@ import { Search, Users, X } from 'lucide-react'
 import { EChart, type ResponsiveChartOption } from './EChart'
 import type { AdvisorSummary, AnalyticsPayload } from '../types'
 import { clusterColor } from '../lib/colors'
-import { formatNumber, formatPercent, normalizeSearch } from '../lib/format'
+import { formatNumber, formatPercent, includesAllSearchTerms, searchTerms } from '../lib/format'
 
 interface FacultyViewProps {
   analytics: AnalyticsPayload
@@ -17,13 +17,13 @@ interface AdvisorClick {
 export function FacultyView({ analytics }: FacultyViewProps) {
   const [query, setQuery] = useState('')
   const [selectedName, setSelectedName] = useState(analytics.advisors[0]?.name ?? '')
-  const normalizedQuery = normalizeSearch(query)
+  const queryTerms = useMemo(() => searchTerms(query), [query])
 
   const visibleAdvisors = useMemo(
-    () => normalizedQuery
-      ? analytics.advisors.filter((advisor) => normalizeSearch(advisor.name).includes(normalizedQuery))
+    () => queryTerms.length > 0
+      ? analytics.advisors.filter((advisor) => includesAllSearchTerms(advisor.name, queryTerms))
       : analytics.advisors,
-    [analytics.advisors, normalizedQuery],
+    [analytics.advisors, queryTerms],
   )
   const selected = analytics.advisors.find((advisor) => advisor.name === selectedName) ?? analytics.advisors[0]
 
@@ -168,7 +168,7 @@ export function FacultyView({ analytics }: FacultyViewProps) {
               No hay coincidencias para “{query}”.
             </div>
           )}
-          {normalizedQuery && visibleAdvisors.length > 0 && (
+          {queryTerms.length > 0 && visibleAdvisors.length > 0 && (
             <div className="faculty-results" aria-label="Resultados de búsqueda">
               {visibleAdvisors.slice(0, 8).map((advisor) => (
                 <button key={advisor.name} type="button" onClick={() => setSelectedName(advisor.name)}>

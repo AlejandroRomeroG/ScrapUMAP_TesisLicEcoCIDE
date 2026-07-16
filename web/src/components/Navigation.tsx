@@ -41,9 +41,13 @@ export function Navigation({ activeView, onChange }: NavigationProps) {
         ))}
       </nav>
       <div className="source-seal">
-        <a href="https://repositorio-digital.cide.edu" target="_blank" rel="noreferrer">
+        <a className="source-link" href="https://repositorio-digital.cide.edu" target="_blank" rel="noreferrer">
           <span aria-hidden="true" />
           <p><strong>Fuente oficial</strong>Repositorio Digital CIDE</p>
+        </a>
+        <a className="author-link" href="https://alejandroromerog.github.io/" target="_blank" rel="noreferrer">
+          <span aria-hidden="true" />
+          <p><strong>Autor</strong>Alejandro Romero González</p>
         </a>
       </div>
     </aside>
