@@ -292,17 +292,31 @@ test('desktop atlas renders every analytical surface and animation control', asy
   await expect(page.getByText('Última actualización', { exact: true })).toBeVisible()
   const updateLabel = page.locator('.data-date > span')
   const updateDate = page.locator('.data-date > strong')
+  const advisorMetric = page.locator('.global-stats > div').filter({ hasText: 'Asesores' })
   const updateTypography = await Promise.all([
     updateLabel.evaluate((element) => ({
       fontFamily: getComputedStyle(element).fontFamily,
       fontSize: getComputedStyle(element).fontSize,
+      fontWeight: getComputedStyle(element).fontWeight,
     })),
     updateDate.evaluate((element) => ({
       fontFamily: getComputedStyle(element).fontFamily,
       fontSize: getComputedStyle(element).fontSize,
+      fontWeight: getComputedStyle(element).fontWeight,
+    })),
+    advisorMetric.locator('span').evaluate((element) => ({
+      fontFamily: getComputedStyle(element).fontFamily,
+      fontSize: getComputedStyle(element).fontSize,
+      fontWeight: getComputedStyle(element).fontWeight,
+    })),
+    advisorMetric.locator('strong').evaluate((element) => ({
+      fontFamily: getComputedStyle(element).fontFamily,
+      fontSize: getComputedStyle(element).fontSize,
+      fontWeight: getComputedStyle(element).fontWeight,
     })),
   ])
-  expect(updateTypography[0]).toEqual(updateTypography[1])
+  expect(updateTypography[0]).toEqual(updateTypography[2])
+  expect(updateTypography[1]).toEqual(updateTypography[3])
   const brandTypeSizes = await page.locator('.brand-mark').evaluate((element) => ({
     at: Number.parseFloat(getComputedStyle(element.querySelector('strong')!).fontSize),
     cide: Number.parseFloat(getComputedStyle(element.querySelector('small')!).fontSize),
@@ -590,20 +604,28 @@ test('desktop atlas renders every analytical surface and animation control', asy
   await saveScreenshot(page, testInfo, 'atlas-desktop-faculty.png')
 
   await page.getByRole('button', { name: 'Método', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Cómo se construyó el atlas', exact: true })).toBeVisible()
-  await expect(page.getByRole('heading', { name: '2,388 tesis conectadas por lo que dicen' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Una forma distinta de leer la producción del CIDE' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Metodología', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '2,388 tesis del Repositorio Digital CIDE' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Qué se puede analizar' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Seis pasos para llegar al Atlas desde el repositorio del CIDE' })).toBeVisible()
   await expect(page.getByText('El proceso, sin jerga')).toHaveCount(0)
   await expect(page.getByText('2,388 fichas, equivalentes al 100.0%, incluyen un abstract utilizable.')).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Ver la fuente original' })).toHaveAttribute('href', 'https://repositorio-digital.cide.edu')
+  await expect(page.getByRole('heading', { name: 'Validaciones realizadas' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Limitaciones', exact: true })).toBeVisible()
+  await expect(page.getByText('Antes de publicar')).toHaveCount(0)
+  await expect(page.getByText('Todo tiene que cuadrar')).toHaveCount(0)
+  await expect(page.getByText('Leer con criterio')).toHaveCount(0)
+  await expect(page.getByText('Lo que el atlas no puede afirmar')).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Consultar el repositorio' })).toHaveAttribute('href', 'https://repositorio-digital.cide.edu')
   const technicalDetails = page.locator('.method-technical')
   await expect(technicalDetails).not.toHaveAttribute('open', '')
   await saveScreenshot(page, testInfo, 'atlas-desktop-methodology.png')
+  await page.getByRole('heading', { name: 'Limitaciones', exact: true }).scrollIntoViewIfNeeded()
+  await saveScreenshot(page, testInfo, 'atlas-desktop-methodology-limits.png')
   await page.getByText('Ver ficha técnica ampliada').click()
   await expect(technicalDetails).toHaveAttribute('open', '')
   await expect(page.getByText('Para las personas más curiosas')).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Las comunidades se calculan antes del mapa' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Comunidades calculadas sobre los embeddings' })).toBeVisible()
   await expect(page.getByText('Secuencia reproducible')).toHaveCount(0)
 })
 
@@ -740,8 +762,8 @@ test('mobile atlas reflows without document overflow or control collisions', asy
   await saveScreenshot(page, testInfo, 'atlas-mobile-program-detail.png')
 
   await page.getByRole('button', { name: 'Método', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Cómo se construyó el atlas', exact: true })).toBeVisible()
-  await expect(page.getByRole('heading', { name: '2,388 tesis conectadas por lo que dicen' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Metodología', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '2,388 tesis del Repositorio Digital CIDE' })).toBeVisible()
   await expectNoDocumentOverflow(page)
   await saveScreenshot(page, testInfo, 'atlas-mobile-methodology.png')
   await page.getByText('Ver ficha técnica ampliada').click()
@@ -773,7 +795,7 @@ test('small portrait and landscape plots stay inside the visible frame', async (
     }
 
     await page.getByRole('button', { name: 'Método', exact: true }).click()
-    await expect(page.getByRole('heading', { name: '2,388 tesis conectadas por lo que dicen' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '2,388 tesis del Repositorio Digital CIDE' })).toBeVisible()
     await expectNoDocumentOverflow(page)
     await page.getByText('Ver ficha técnica ampliada').click()
     await expect(page.locator('.method-technical')).toHaveAttribute('open', '')

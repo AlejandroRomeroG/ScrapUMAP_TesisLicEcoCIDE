@@ -234,22 +234,21 @@
   justify-content: center;
 }
 
-.data-date span,
-.data-date strong {
-  font-family: 'Manrope Variable', sans-serif;
-  font-size: 0.64rem;
-  line-height: 1.25;
-}
-
 .data-date span {
   color: var(--muted);
-  font-weight: 620;
+  font-family: 'Manrope Variable', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 0.59rem;
+  font-weight: 400;
+  line-height: 1.25;
   text-transform: uppercase;
 }
 
 .data-date strong {
-  margin-top: 7px;
-  font-weight: 720;
+  margin-top: 5px;
+  font-family: 'Space Grotesk Variable', sans-serif;
+  font-size: 1.18rem;
+  font-weight: 670;
+  line-height: 1.1;
 }
 
 .view-transition {

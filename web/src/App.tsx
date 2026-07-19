@@ -29,8 +29,8 @@ const VIEW_COPY: Record<ViewId, { title: string; subtitle: string }> = {
     subtitle: 'Volumen de asesoría, amplitud temática y conexiones entre programas.',
   },
   methodology: {
-    title: 'Cómo se construyó el atlas',
-    subtitle: 'Cómo pasamos de fichas del repositorio a conexiones, temas y una vista a través del tiempo.',
+    title: 'Metodología',
+    subtitle: 'Fuentes, preparación de datos, modelo semántico, agrupamiento y validación.',
   },
 }
 
