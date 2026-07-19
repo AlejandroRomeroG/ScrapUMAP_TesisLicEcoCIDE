@@ -49,6 +49,7 @@ interface EChartProps {
   className?: string
   ariaLabel: string
   onClick?: (params: unknown) => void
+  restoreTooltipOnClick?: boolean
 }
 
 interface TooltipPositionSize {
@@ -57,6 +58,11 @@ interface TooltipPositionSize {
 }
 
 type TooltipRecord = Record<string, unknown>
+
+interface TooltipTarget {
+  seriesIndex: number
+  dataIndex: number
+}
 
 const TOOLTIP_EDGE_GAP = 8
 const TOOLTIP_POINTER_GAP = 12
@@ -119,10 +125,18 @@ function resolvedOption(element: HTMLDivElement, value: ResponsiveChartOption): 
   }
 }
 
-export function EChart({ option, className = '', ariaLabel, onClick }: EChartProps) {
+export function EChart({
+  option,
+  className = '',
+  ariaLabel,
+  onClick,
+  restoreTooltipOnClick = false,
+}: EChartProps) {
   const elementRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<echarts.ECharts | null>(null)
   const optionRef = useRef(option)
+  const pendingTooltipRef = useRef<TooltipTarget | null>(null)
+  const pendingTooltipTimeoutRef = useRef<number | null>(null)
   optionRef.current = option
 
   useEffect(() => {
@@ -157,18 +171,51 @@ export function EChart({ option, className = '', ariaLabel, onClick }: EChartPro
   useEffect(() => {
     const element = elementRef.current
     if (!element) return
-    chartRef.current?.setOption(resolvedOption(element, option), { notMerge: true, lazyUpdate: false })
-  }, [option])
+    const chart = chartRef.current
+    chart?.setOption(resolvedOption(element, option), { notMerge: true, lazyUpdate: false })
+    const target = restoreTooltipOnClick ? pendingTooltipRef.current : null
+    if (!chart || !target) return
+
+    chart.dispatchAction({ type: 'showTip', seriesIndex: target.seriesIndex, dataIndex: target.dataIndex })
+    chart.getZr().flush()
+    if (pendingTooltipRef.current === target) pendingTooltipRef.current = null
+    if (pendingTooltipTimeoutRef.current !== null) {
+      window.clearTimeout(pendingTooltipTimeoutRef.current)
+      pendingTooltipTimeoutRef.current = null
+    }
+  }, [option, restoreTooltipOnClick])
 
   useEffect(() => {
     const chart = chartRef.current
     if (!chart || !onClick) return
-    const handler = (params: unknown) => onClick(params)
+    const handler = (params: unknown) => {
+      if (restoreTooltipOnClick) {
+        const target = params as Partial<TooltipTarget>
+        if (typeof target.seriesIndex === 'number' && typeof target.dataIndex === 'number') {
+          const pending = { seriesIndex: target.seriesIndex, dataIndex: target.dataIndex }
+          pendingTooltipRef.current = pending
+          if (pendingTooltipTimeoutRef.current !== null) {
+            window.clearTimeout(pendingTooltipTimeoutRef.current)
+          }
+          pendingTooltipTimeoutRef.current = window.setTimeout(() => {
+            if (pendingTooltipRef.current === pending) pendingTooltipRef.current = null
+            pendingTooltipTimeoutRef.current = null
+          }, 800)
+        }
+      }
+      onClick(params)
+    }
     chart.on('click', handler)
     return () => {
       if (!chart.isDisposed()) chart.off('click', handler)
     }
-  }, [onClick])
+  }, [onClick, restoreTooltipOnClick])
+
+  useEffect(() => () => {
+    if (pendingTooltipTimeoutRef.current !== null) {
+      window.clearTimeout(pendingTooltipTimeoutRef.current)
+    }
+  }, [])
 
   return <div ref={elementRef} className={`echart ${className}`} role="img" aria-label={ariaLabel} />
 }

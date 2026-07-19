@@ -20,6 +20,37 @@ export function TopicsView({ analytics }: TopicsViewProps) {
   const [selectedId, setSelectedId] = useState(initialCluster.id)
   const selected = analytics.clusters.find((cluster) => cluster.id === selectedId) ?? initialCluster
 
+  const topicDomains = useMemo(() => {
+    const years = analytics.clusters.map((cluster) => cluster.yearMean)
+    const interdisciplinarity = analytics.clusters.map((cluster) => cluster.interdisciplinarity)
+    const yearMin = Math.min(...years)
+    const yearMax = Math.max(...years)
+    const interdisciplinarityMin = Math.min(...interdisciplinarity)
+    const interdisciplinarityMax = Math.max(...interdisciplinarity)
+
+    function domain(compact: boolean) {
+      const yearPadding = Math.max((yearMax - yearMin) * (compact ? 0.09 : 0.07), compact ? 0.55 : 0.4)
+      const interdisciplinarityPadding = Math.max(
+        (interdisciplinarityMax - interdisciplinarityMin) * (compact ? 0.14 : 0.1),
+        compact ? 0.07 : 0.055,
+      )
+      return {
+        yearMin: yearMin - yearPadding,
+        yearMax: yearMax + yearPadding,
+        interdisciplinarityMin: Math.max(
+          0,
+          Math.floor((interdisciplinarityMin - interdisciplinarityPadding) * 20) / 20,
+        ),
+        interdisciplinarityMax: Math.min(
+          1,
+          Math.ceil((interdisciplinarityMax + interdisciplinarityPadding) * 20) / 20,
+        ),
+      }
+    }
+
+    return { compact: domain(true), regular: domain(false) }
+  }, [analytics.clusters])
+
   const option = useMemo<ResponsiveChartOption>(() => ({ compact }) => ({
     animationDuration: 560,
     animationEasing: 'cubicOut',
@@ -43,11 +74,12 @@ export function TopicsView({ analytics }: TopicsViewProps) {
     xAxis: {
       type: 'value',
       scale: true,
+      min: compact ? topicDomains.compact.yearMin : topicDomains.regular.yearMin,
+      max: compact ? topicDomains.compact.yearMax : topicDomains.regular.yearMax,
+      splitNumber: compact ? 4 : 5,
       name: compact ? 'Año promedio' : 'Año promedio de publicación',
       nameLocation: 'middle',
       nameGap: compact ? 30 : 42,
-      min: (value: { min: number }) => Math.floor(value.min) - (compact ? 2 : 1),
-      max: (value: { max: number }) => Math.ceil(value.max) + (compact ? 2 : 1),
       axisLine: { lineStyle: { color: '#aeb5ad' } },
       axisTick: { show: false },
       axisLabel: {
@@ -61,8 +93,14 @@ export function TopicsView({ analytics }: TopicsViewProps) {
     },
     yAxis: {
       type: 'value',
-      min: compact ? -0.08 : -0.04,
-      max: compact ? 1.08 : 1.04,
+      scale: true,
+      min: compact
+        ? topicDomains.compact.interdisciplinarityMin
+        : topicDomains.regular.interdisciplinarityMin,
+      max: compact
+        ? topicDomains.compact.interdisciplinarityMax
+        : topicDomains.regular.interdisciplinarityMax,
+      splitNumber: compact ? 4 : 5,
       name: compact ? 'Interdisciplina' : 'Interdisciplinariedad',
       nameLocation: 'middle',
       nameGap: compact ? 30 : 46,
@@ -72,7 +110,10 @@ export function TopicsView({ analytics }: TopicsViewProps) {
         color: '#66716b',
         fontFamily: 'Manrope Variable',
         fontSize: compact ? 9 : 12,
-        formatter: (value: number) => formatCoefficient(value, 1),
+        formatter: (value: number) => {
+          const precision = Math.abs(value * 10 - Math.round(value * 10)) < 0.000001 ? 1 : 2
+          return formatCoefficient(value, precision)
+        },
       },
       nameTextStyle: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: compact ? 9 : 12 },
       splitLine: { lineStyle: { color: '#e2e5df' } },
@@ -99,7 +140,7 @@ export function TopicsView({ analytics }: TopicsViewProps) {
       },
       emphasis: { scale: 1.12 },
     })),
-  }), [analytics.clusters, selectedId])
+  }), [analytics.clusters, selectedId, topicDomains])
 
   function handleClick(params: unknown) {
     const value = (params as TopicClick).value

@@ -419,6 +419,7 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
               className="program-chart"
               ariaLabel={mode === 'profile' ? 'Mapa de calor de temas por programa' : 'Matriz de similitud entre programas'}
               onClick={handleChartClick}
+              restoreTooltipOnClick
             />
             {mode === 'similarity' && (
               <div className="program-similarity-x-labels" role="list" aria-label="Programas del eje X">
