@@ -40,6 +40,28 @@ function programLevelColor(level: string): string {
   return '#bc641f'
 }
 
+function selectedCellOverlay(x: number, y: number, width: number, height: number) {
+  return {
+    type: 'scatter',
+    data: [[x, y]],
+    symbol: 'rect',
+    symbolSize: [Math.max(4, width - 1), Math.max(4, height - 1)],
+    silent: true,
+    z: 20,
+    clip: false,
+    animation: false,
+    itemStyle: {
+      color: 'rgba(248, 250, 245, 0.08)',
+      borderColor: '#111815',
+      borderWidth: 3,
+      borderRadius: 2,
+      shadowColor: 'rgba(17, 24, 21, 0.18)',
+      shadowBlur: 3,
+    },
+    emphasis: { disabled: true },
+  }
+}
+
 export function ProgramsView({ analytics }: ProgramsViewProps) {
   const [mode, setMode] = useState<ProgramMode>('profile')
   const [selectedName, setSelectedName] = useState(
@@ -67,29 +89,38 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
   const programLabels = orderedPrograms.map(programAxisLabel)
   const clusters = [...analytics.clusters].sort((a, b) => a.id - b.id)
 
-  const profileOption = useMemo<ResponsiveChartOption>(() => ({ width, compact }) => {
+  const profileOption = useMemo<ResponsiveChartOption>(() => ({ width, height, compact }) => {
     const matrix = new Map(
       analytics.programMatrix.map((datum) => [`${datum.degreeProgram}|${datum.clusterId}`, datum]),
     )
     const medium = width < 820
     const gridLeft = compact ? 76 : medium ? 154 : 245
+    const gridRight = compact ? 8 : 30
+    const gridTop = compact ? COMPACT_PROGRAM_GRID_TOP : 24
+    const gridBottom = compact ? COMPACT_PROGRAM_GRID_BOTTOM : 74
     const values = orderedPrograms.flatMap((program, y) => clusters.map((cluster, x) => {
       const datum = matrix.get(`${program.degreeProgram}|${cluster.id}`)
-      const active = selectedName === program.degreeProgram && selectedClusterId === cluster.id
-      return {
-        value: [x, y, datum?.programShare ?? 0, datum?.count ?? 0, program.degreeProgram, cluster.theme, cluster.id],
-        itemStyle: active ? { borderColor: '#111815', borderWidth: 3 } : undefined,
-      }
+      return [x, y, datum?.programShare ?? 0, datum?.count ?? 0, program.degreeProgram, cluster.theme, cluster.id]
     }))
+    const selectedX = clusters.findIndex((cluster) => cluster.id === selectedClusterId)
+    const selectedY = orderedPrograms.findIndex((program) => program.degreeProgram === selectedName)
+    const selectedCell = selectedX >= 0 && selectedY >= 0
+      ? selectedCellOverlay(
+          selectedX,
+          selectedY,
+          (width - gridLeft - gridRight) / clusters.length,
+          (height - gridTop - gridBottom) / orderedPrograms.length,
+        )
+      : null
     return {
       animationDuration: 420,
       animationEasing: 'cubicOut',
       aria: { enabled: true },
       grid: {
         left: gridLeft,
-        right: compact ? 8 : 30,
-        top: compact ? COMPACT_PROGRAM_GRID_TOP : 24,
-        bottom: compact ? COMPACT_PROGRAM_GRID_BOTTOM : 74,
+        right: gridRight,
+        top: gridTop,
+        bottom: gridBottom,
       },
       tooltip: {
         trigger: 'item',
@@ -134,6 +165,7 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
         itemGap: compact ? 4 : 10,
         textGap: compact ? 2 : 5,
         textStyle: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: compact ? 7 : 10 },
+        seriesIndex: 0,
         pieces: [
           { min: 0.2, label: '20%+', color: '#111815' },
           { min: 0.1, max: 0.199999, label: '10–20%', color: '#3f6257' },
@@ -142,37 +174,49 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
           { min: 0, max: 0, label: '0%', color: '#eef0ec' },
         ],
       },
-      series: [{
-        type: 'heatmap',
-        data: values,
-        itemStyle: { borderColor: '#f7f8f4', borderWidth: 2, borderRadius: 2 },
-        emphasis: { itemStyle: { borderColor: '#111815', borderWidth: 2 } },
-      }],
+      series: [
+        {
+          type: 'heatmap',
+          data: values,
+          itemStyle: { borderColor: '#f7f8f4', borderWidth: 2, borderRadius: 2 },
+          emphasis: { itemStyle: { borderColor: '#111815', borderWidth: 2 } },
+        },
+        ...(selectedCell ? [selectedCell] : []),
+      ],
     }
   }, [analytics.programMatrix, clusters, orderedPrograms, programLabels, selectedClusterId, selectedName])
 
-  const similarityOption = useMemo<ResponsiveChartOption>(() => ({ width, compact }) => {
+  const similarityOption = useMemo<ResponsiveChartOption>(() => ({ width, height, compact }) => {
     const matrix = new Map(
       analytics.programSimilarity.map((datum) => [`${datum.programA}|${datum.programB}`, datum]),
     )
     const medium = width < 820
     const gridLeft = compact ? 76 : medium ? 154 : 245
+    const gridRight = compact ? 8 : 30
+    const gridTop = compact ? COMPACT_PROGRAM_GRID_TOP : 48
+    const gridBottom = compact ? COMPACT_PROGRAM_GRID_BOTTOM : 155
     const values = programNames.flatMap((programA, y) => programNames.map((programB, x) => {
       const datum = matrix.get(`${programA}|${programB}`)
-      const active = selectedName === programA && selectedComparisonName === programB
-      return {
-        value: [x, y, datum?.similarity ?? 0, programA, programB],
-        itemStyle: active ? { borderColor: '#111815', borderWidth: 3 } : undefined,
-      }
+      return [x, y, datum?.similarity ?? 0, programA, programB]
     }))
+    const selectedX = programNames.findIndex((program) => program === selectedComparisonName)
+    const selectedY = programNames.findIndex((program) => program === selectedName)
+    const selectedCell = selectedX >= 0 && selectedY >= 0
+      ? selectedCellOverlay(
+          selectedX,
+          selectedY,
+          (width - gridLeft - gridRight) / programNames.length,
+          (height - gridTop - gridBottom) / programNames.length,
+        )
+      : null
     return {
       animationDuration: 420,
       aria: { enabled: true },
       grid: {
         left: gridLeft,
-        right: compact ? 8 : 30,
-        top: compact ? COMPACT_PROGRAM_GRID_TOP : 48,
-        bottom: compact ? COMPACT_PROGRAM_GRID_BOTTOM : 155,
+        right: gridRight,
+        top: gridTop,
+        bottom: gridBottom,
       },
       tooltip: {
         backgroundColor: '#111815',
@@ -225,15 +269,19 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
         itemGap: compact ? 4 : 10,
         textGap: compact ? 2 : 5,
         textStyle: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: compact ? 7 : 10 },
+        seriesIndex: 0,
         pieces: SIMILARITY_LEGEND_PIECES,
         selected: compact ? similarityLegendSelection : undefined,
       },
-      series: [{
-        type: 'heatmap',
-        data: values,
-        itemStyle: { borderColor: '#f7f8f4', borderWidth: 1.5, borderRadius: 2 },
-        emphasis: { itemStyle: { borderColor: '#111815', borderWidth: 2 } },
-      }],
+      series: [
+        {
+          type: 'heatmap',
+          data: values,
+          itemStyle: { borderColor: '#f7f8f4', borderWidth: 1.5, borderRadius: 2 },
+          emphasis: { itemStyle: { borderColor: '#111815', borderWidth: 2 } },
+        },
+        ...(selectedCell ? [selectedCell] : []),
+      ],
     }
   }, [analytics.programSimilarity, programLabels, programNames, selectedComparisonName, selectedName, similarityLegendSelection])
 

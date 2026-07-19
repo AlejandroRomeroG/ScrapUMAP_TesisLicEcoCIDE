@@ -297,8 +297,8 @@ async function clickProgramHeatmapCell(page: Page, mode: 'profile' | 'similarity
   const medium = box!.width < 820
   const left = compact ? 76 : medium ? 154 : 245
   const right = compact ? 8 : 30
-  const top = mode === 'profile' ? (compact ? 14 : 24) : (compact ? 40 : 48)
-  const bottom = mode === 'profile' ? (compact ? 64 : 74) : (compact ? 112 : 155)
+  const top = mode === 'profile' ? (compact ? 14 : 24) : (compact ? 14 : 48)
+  const bottom = mode === 'profile' ? (compact ? 64 : 74) : (compact ? 64 : 155)
   const columns = mode === 'profile' ? 20 : 21
   const rows = 21
   const cellWidth = (box!.width - left - right) / columns
@@ -582,6 +582,7 @@ test('desktop atlas renders every analytical surface and animation control', asy
   await expect(page.locator('.program-comparison-bars')).toHaveAttribute('data-comparison-count', '20')
   await expect(page.locator('.program-comparison-bars button')).toHaveCount(20)
   await expect(page.locator('.program-comparison-bars button').first()).toHaveAttribute('aria-pressed', 'true')
+  await saveScreenshot(page, testInfo, 'atlas-desktop-program-profile-selection.png')
   await page.getByRole('button', { name: 'Similitud' }).click()
   await expectCanvasHasContent(page.locator('.program-chart canvas').last())
   await expectChartTooltipContained(page, '.program-chart')
