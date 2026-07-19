@@ -25,6 +25,10 @@ const SIMILARITY_LEGEND_PIECES = [
   { min: 0, max: 0.399999, label: '<0.40', color: '#eef0ec' },
 ]
 
+function createSimilarityLegendSelection(): Record<string, boolean> {
+  return Object.fromEntries(SIMILARITY_LEGEND_PIECES.map((_, index) => [String(index), true]))
+}
+
 function programAxisLabel(program: ProgramSummary): string {
   const prefix = program.level === 'Licenciatura' ? 'L' : program.level === 'Maestría' ? 'M' : 'D'
   return `${prefix} · ${shortProgram(program.degreeProgram)}`
@@ -43,6 +47,7 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
   )
   const [selectedClusterId, setSelectedClusterId] = useState<number | null>(null)
   const [selectedComparisonName, setSelectedComparisonName] = useState<string | null>(null)
+  const [similarityLegendSelection, setSimilarityLegendSelection] = useState(createSimilarityLegendSelection)
 
   const orderedPrograms = useMemo(
     () => [...analytics.programs].sort((a, b) => {
@@ -189,7 +194,7 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
           rotate: 58,
           color: '#4e5953',
           fontFamily: 'Manrope Variable',
-          fontSize: 9,
+          fontSize: compact ? 8 : medium ? 9 : 11,
           interval: 0,
           hideOverlap: false,
           margin: 8,
@@ -221,6 +226,7 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
         textGap: compact ? 2 : 5,
         textStyle: { color: '#66716b', fontFamily: 'Manrope Variable', fontSize: compact ? 7 : 10 },
         pieces: SIMILARITY_LEGEND_PIECES,
+        selected: compact ? similarityLegendSelection : undefined,
       },
       series: [{
         type: 'heatmap',
@@ -229,7 +235,7 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
         emphasis: { itemStyle: { borderColor: '#111815', borderWidth: 2 } },
       }],
     }
-  }, [analytics.programSimilarity, programLabels, programNames, selectedComparisonName, selectedName])
+  }, [analytics.programSimilarity, programLabels, programNames, selectedComparisonName, selectedName, similarityLegendSelection])
 
   const profileRows = useMemo(() => {
     const matrix = new Map(
@@ -271,6 +277,7 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
     setMode(nextMode)
     setSelectedClusterId(null)
     setSelectedComparisonName(null)
+    setSimilarityLegendSelection(createSimilarityLegendSelection())
   }
 
   function selectProgram(program: string, comparison: string | null = null) {
@@ -296,6 +303,13 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
     setSelectedComparisonName(value[3] === value[4] ? null : value[4])
   }
 
+  function toggleSimilarityLegendPiece(index: number) {
+    const key = String(index)
+    setSimilarityLegendSelection((current) => ({ ...current, [key]: !current[key] }))
+  }
+
+  const activeSimilarityLegendPieces = Object.values(similarityLegendSelection).filter(Boolean).length
+
   return (
     <section
       className="analysis-view programs-view"
@@ -305,6 +319,7 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
       data-compact-grid-bottom={COMPACT_PROGRAM_GRID_BOTTOM}
       data-compact-grid-shared="true"
       data-compact-similarity-legend="external"
+      data-active-similarity-ranges={mode === 'similarity' ? activeSimilarityLegendPieces : undefined}
     >
       <div className="analysis-toolbar">
         <div>
@@ -332,12 +347,22 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
           </div>
           {mode === 'similarity' && (
             <div className="program-similarity-legend" role="list" aria-label="Escala de similitud">
-              {[...SIMILARITY_LEGEND_PIECES].reverse().map((piece) => (
-                <span key={piece.label} role="listitem">
-                  <i style={{ backgroundColor: piece.color }} aria-hidden="true" />
-                  {piece.label}
-                </span>
-              ))}
+              {SIMILARITY_LEGEND_PIECES
+                .map((piece, index) => ({ piece, index }))
+                .reverse()
+                .map(({ piece, index }) => (
+                  <span key={piece.label} role="listitem">
+                    <button
+                      type="button"
+                      aria-label={`${similarityLegendSelection[String(index)] ? 'Ocultar' : 'Mostrar'} similitudes ${piece.label}`}
+                      aria-pressed={similarityLegendSelection[String(index)]}
+                      onClick={() => toggleSimilarityLegendPiece(index)}
+                    >
+                      <i style={{ backgroundColor: piece.color }} aria-hidden="true" />
+                      {piece.label}
+                    </button>
+                  </span>
+                ))}
             </div>
           )}
           <div className="chart-scroll program-chart-frame">

@@ -1171,10 +1171,39 @@
   }
 
   .program-similarity-legend span {
+    display: block;
+  }
+
+  .program-similarity-legend button {
+    padding: 2px 0;
     display: inline-flex;
     align-items: center;
     gap: 3px;
+    color: inherit;
+    font: inherit;
+    line-height: inherit;
     white-space: nowrap;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    transition: opacity 140ms ease;
+  }
+
+  .program-similarity-legend button[aria-pressed='false'] {
+    opacity: 0.34;
+  }
+
+  .program-similarity-legend button:focus-visible {
+    outline: 2px solid #111815;
+    outline-offset: 2px;
+  }
+
+  .program-similarity-legend button:hover {
+    opacity: 0.72;
+  }
+
+  .program-similarity-legend button[aria-pressed='true']:hover {
+    opacity: 1;
   }
 
   .program-similarity-legend i {
@@ -1185,7 +1214,7 @@
   }
 
   .program-similarity-x-labels {
-    height: 170px;
+    height: 210px;
     margin: -61px 8px 0 76px;
     display: grid;
     grid-template-columns: repeat(21, minmax(0, 1fr));
@@ -1198,7 +1227,7 @@
     justify-self: center;
     color: #4e5953;
     font-family: 'Manrope Variable', sans-serif;
-    font-size: 6.5px;
+    font-size: 8px;
     font-weight: 500;
     line-height: 1;
     letter-spacing: 0;
