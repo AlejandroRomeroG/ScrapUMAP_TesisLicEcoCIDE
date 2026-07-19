@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { EChart, type ResponsiveChartOption } from './EChart'
 import type { AnalyticsPayload } from '../types'
 import { CLUSTER_COLORS, clusterColor } from '../lib/colors'
@@ -113,10 +113,6 @@ export function TopicsView({ analytics }: TopicsViewProps) {
           <span className="eyebrow">Cartografía de temas</span>
           <h2>Volumen, tiempo y mezcla disciplinaria</h2>
         </div>
-        <div className="topic-key">
-          <Sparkles size={17} aria-hidden="true" />
-          Tamaño = número de tesis
-        </div>
       </div>
 
       <div className="analysis-split">
@@ -124,7 +120,7 @@ export function TopicsView({ analytics }: TopicsViewProps) {
           <div className="chart-heading">
             <div>
               <h3>Los veinte territorios del CIDE</h3>
-              <p>Arriba aparecen los temas con mayor mezcla entre programas; a la derecha, los de publicación más reciente.</p>
+              <p>El tamaño de cada círculo representa el número de tesis; arriba aparecen los temas con mayor mezcla entre programas y, a la derecha, los de publicación más reciente.</p>
             </div>
             <span>n = {formatNumber(analytics.meta.thesisCount)}</span>
           </div>

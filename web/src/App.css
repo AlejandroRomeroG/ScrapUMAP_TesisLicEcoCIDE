@@ -1297,18 +1297,6 @@
   margin-top: 18px;
 }
 
-.topic-key {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--muted);
-  font-size: 0.66rem;
-}
-
-.topic-key svg {
-  color: #e4a019;
-}
-
 .topic-number {
   width: 40px;
   height: 40px;

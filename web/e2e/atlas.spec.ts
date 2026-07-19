@@ -615,6 +615,10 @@ test('desktop atlas renders every analytical surface and animation control', asy
   await expectPlotFitsViewport(page, '.topic-chart')
   await expectChartTooltipContained(page, '.topic-chart')
   await expect(page.locator('.topic-selector')).toHaveCount(0)
+  await expect(page.locator('.topic-key')).toHaveCount(0)
+  await expect(page.locator('.topics-view .chart-heading p')).toContainText(
+    'El tamaño de cada círculo representa el número de tesis',
+  )
   await expect(page.locator('.topic-context h2')).toHaveText('Crimen, violencia y seguridad')
   await saveScreenshot(page, testInfo, 'atlas-desktop-topics.png')
 
