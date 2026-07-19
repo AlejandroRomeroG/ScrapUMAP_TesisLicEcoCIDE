@@ -175,13 +175,14 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: {
-          rotate: compact ? 90 : 58,
+          show: !compact,
+          rotate: 58,
           color: '#4e5953',
           fontFamily: 'Manrope Variable',
-          fontSize: compact ? 6.5 : 9,
-          interval: compact ? () => true : 0,
+          fontSize: 9,
+          interval: 0,
           hideOverlap: false,
-          margin: compact ? 4 : 8,
+          margin: 8,
         },
       },
       yAxis: {
@@ -294,7 +295,7 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
     <section
       className="analysis-view programs-view"
       data-similarity-x-label-count={mode === 'similarity' ? programLabels.length : undefined}
-      data-similarity-x-label-strategy={mode === 'similarity' ? 'all-vertical' : undefined}
+      data-similarity-x-label-strategy={mode === 'similarity' ? 'dom-vertical-all' : undefined}
     >
       <div className="analysis-toolbar">
         <div>
@@ -320,13 +321,22 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
             </div>
             <span>Fuente: Repositorio Digital CIDE</span>
           </div>
-          <div className="chart-scroll">
+          <div className="chart-scroll program-chart-frame">
             <EChart
               option={mode === 'profile' ? profileOption : similarityOption}
               className="program-chart"
               ariaLabel={mode === 'profile' ? 'Mapa de calor de temas por programa' : 'Matriz de similitud entre programas'}
               onClick={handleChartClick}
             />
+            {mode === 'similarity' && (
+              <div className="program-similarity-x-labels" role="list" aria-label="Programas del eje X">
+                {orderedPrograms.map((program) => (
+                  <span key={program.degreeProgram} role="listitem" title={program.degreeProgram}>
+                    {programAxisLabel(program)}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
