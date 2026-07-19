@@ -144,6 +144,16 @@ async function readFitCameraState(page: Page): Promise<CameraState> {
   }))
 }
 
+async function expectFitProfile(
+  page: Page,
+  profile: { viewport: 'mobile' | 'desktop'; context: 'map' | 'timeline'; zoomScale: string; verticalOffset: string },
+) {
+  await expect(activeSemanticMap(page)).toHaveAttribute('data-fit-viewport', profile.viewport)
+  await expect(activeSemanticMap(page)).toHaveAttribute('data-fit-context', profile.context)
+  await expect(activeSemanticMap(page)).toHaveAttribute('data-fit-zoom-scale', profile.zoomScale)
+  await expect(activeSemanticMap(page)).toHaveAttribute('data-fit-vertical-offset', profile.verticalOffset)
+}
+
 async function expectClusterVisibilityPreservesCamera(page: Page, token: string) {
   const canvas = activeSemanticCanvas(page)
   const initialCamera = await readCameraState(page)
@@ -250,7 +260,7 @@ async function clickProgramHeatmapCell(page: Page, mode: 'profile' | 'similarity
   const left = compact ? 76 : medium ? 154 : 245
   const right = compact ? 8 : 30
   const top = mode === 'profile' ? (compact ? 14 : 24) : (compact ? 40 : 48)
-  const bottom = mode === 'profile' ? (compact ? 64 : 74) : (compact ? 94 : 155)
+  const bottom = mode === 'profile' ? (compact ? 64 : 74) : (compact ? 112 : 155)
   const columns = mode === 'profile' ? 20 : 21
   const rows = 21
   const cellWidth = (box!.width - left - right) / columns
@@ -270,6 +280,19 @@ test('desktop atlas renders every analytical surface and animation control', asy
   await expect(page.getByRole('heading', { name: 'Mapa semántico', exact: true })).toBeVisible()
   await expect(page.getByText('2,388').first()).toBeVisible()
   await expect(page.getByText('Última actualización', { exact: true })).toBeVisible()
+  const updateLabel = page.locator('.data-date > span')
+  const updateDate = page.locator('.data-date > strong')
+  const updateTypography = await Promise.all([
+    updateLabel.evaluate((element) => ({
+      fontFamily: getComputedStyle(element).fontFamily,
+      fontSize: getComputedStyle(element).fontSize,
+    })),
+    updateDate.evaluate((element) => ({
+      fontFamily: getComputedStyle(element).fontFamily,
+      fontSize: getComputedStyle(element).fontSize,
+    })),
+  ])
+  expect(updateTypography[0]).toEqual(updateTypography[1])
   const brandTypeSizes = await page.locator('.brand-mark').evaluate((element) => ({
     at: Number.parseFloat(getComputedStyle(element.querySelector('strong')!).fontSize),
     cide: Number.parseFloat(getComputedStyle(element.querySelector('small')!).fontSize),
@@ -390,6 +413,9 @@ test('desktop atlas renders every analytical surface and animation control', asy
 
   await page.getByRole('button', { name: '3D', exact: true }).click()
   await expect(activeSemanticMap(page)).toHaveAttribute('data-thesis-sphere-scale', '0.048')
+  await expectFitProfile(page, {
+    viewport: 'desktop', context: 'map', zoomScale: '1.750', verticalOffset: '0.0',
+  })
   const rotateCamera = page.getByRole('button', { name: 'Girar cámara' })
   const moveCamera = page.getByRole('button', { name: 'Mover cámara' })
   await expect(rotateCamera).toHaveAttribute('aria-pressed', 'true')
@@ -451,6 +477,9 @@ test('desktop atlas renders every analytical surface and animation control', asy
 
   await page.getByRole('button', { name: 'Tiempo', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'El mapa a través del tiempo' })).toBeVisible()
+  await expectFitProfile(page, {
+    viewport: 'desktop', context: 'timeline', zoomScale: '1.750', verticalOffset: '0.0',
+  })
   await expectFilterTogglePreservesMap(page, 'time-3d-filter')
   await expectClusterVisibilityPreservesCamera(page, 'time-3d-camera')
   await page.getByRole('button', { name: '2D', exact: true }).click()
@@ -558,6 +587,9 @@ test('mobile atlas reflows without document overflow or control collisions', asy
   await expectNoDocumentOverflow(page)
 
   await page.getByRole('button', { name: '3D', exact: true }).click()
+  await expectFitProfile(page, {
+    viewport: 'mobile', context: 'map', zoomScale: '1.500', verticalOffset: '0.0',
+  })
   const mobileCameraModes = page.getByRole('group', { name: 'Interacción de cámara 3D' })
   const mobileReset = page.getByRole('button', { name: 'Volver a la vista inicial' })
   await expect(mobileCameraModes).toBeVisible()
@@ -591,6 +623,7 @@ test('mobile atlas reflows without document overflow or control collisions', asy
   }).not.toBe(mobileInitialTarget)
   await mobileReset.click()
   await expect.poll(() => readCameraState(page)).toEqual(mobileInitial3dCamera)
+  await saveScreenshot(page, testInfo, 'atlas-mobile-map-3d.png')
   await page.getByRole('button', { name: '2D', exact: true }).click()
 
   const navigation = await page.locator('.side-navigation').boundingBox()
@@ -601,6 +634,9 @@ test('mobile atlas reflows without document overflow or control collisions', asy
   await saveScreenshot(page, testInfo, 'atlas-mobile-map.png')
 
   await page.getByRole('button', { name: 'Tiempo', exact: true }).click()
+  await expectFitProfile(page, {
+    viewport: 'mobile', context: 'timeline', zoomScale: '1.500', verticalOffset: '36.0',
+  })
   await expectFilterTogglePreservesMap(page, 'mobile-time-filter')
   const dock = await page.locator('.timeline-dock').boundingBox()
   const timeStage = await activeMapStage(page).boundingBox()
@@ -614,6 +650,19 @@ test('mobile atlas reflows without document overflow or control collisions', asy
   await expect(page.locator('.range-labels')).not.toContainText('salto')
   await saveScreenshot(page, testInfo, 'atlas-mobile-time.png')
 
+  await page.getByRole('button', { name: '3D', exact: true }).click()
+  await expectFitProfile(page, {
+    viewport: 'mobile', context: 'timeline', zoomScale: '1.500', verticalOffset: '36.0',
+  })
+  const mobileTimeline3dCamera = await readFitCameraState(page)
+  await activeSemanticCanvas(page).hover()
+  await page.mouse.wheel(0, -260)
+  await expect.poll(async () => (await readCameraState(page)).zoom).not.toBe(mobileTimeline3dCamera.zoom)
+  await page.getByRole('button', { name: 'Volver a la vista inicial' }).click()
+  await expect.poll(() => readCameraState(page)).toEqual(mobileTimeline3dCamera)
+  await saveScreenshot(page, testInfo, 'atlas-mobile-time-3d.png')
+  await page.getByRole('button', { name: '2D', exact: true }).click()
+
   await page.getByRole('button', { name: 'Programas', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Programas', exact: true })).toBeVisible()
   await expectNoDocumentOverflow(page)
@@ -626,6 +675,7 @@ test('mobile atlas reflows without document overflow or control collisions', asy
   await expectCanvasHasContent(page.locator('.program-chart canvas').last())
   await expectPlotFitsViewport(page, '.program-chart')
   await expectChartTooltipContained(page, '.program-chart')
+  await saveScreenshot(page, testInfo, 'atlas-mobile-program-similarity.png')
 
   await page.getByRole('button', { name: 'Temas', exact: true }).click()
   await expectCanvasHasContent(page.locator('.topic-chart canvas').last())

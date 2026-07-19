@@ -157,7 +157,7 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
         left: gridLeft,
         right: compact ? 8 : 30,
         top: compact ? 40 : 48,
-        bottom: compact ? 94 : 155,
+        bottom: compact ? 112 : 155,
       },
       tooltip: {
         backgroundColor: '#111815',
@@ -175,12 +175,13 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: {
-          rotate: compact ? 52 : 58,
+          rotate: compact ? 65 : 58,
           color: '#4e5953',
           fontFamily: 'Manrope Variable',
-          fontSize: compact ? 7 : 9,
-          interval: compact ? 1 : 0,
-          hideOverlap: true,
+          fontSize: compact ? 6.5 : 9,
+          interval: 0,
+          hideOverlap: false,
+          margin: compact ? 5 : 8,
         },
       },
       yAxis: {

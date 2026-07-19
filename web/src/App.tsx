@@ -109,7 +109,7 @@ function App() {
             ))}
           </div>
           <div className="data-date">
-            <span>Última actualización</span>
+            <span>Última<br /> actualización</span>
             <strong>{updatedDate(analytics.meta.sourceUpdatedAt)}</strong>
           </div>
         </header>

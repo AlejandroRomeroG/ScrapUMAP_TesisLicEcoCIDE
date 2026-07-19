@@ -234,16 +234,21 @@
   justify-content: center;
 }
 
+.data-date span,
+.data-date strong {
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: 0.64rem;
+  line-height: 1.25;
+}
+
 .data-date span {
   color: var(--muted);
-  font-size: 0.58rem;
-  white-space: nowrap;
+  font-weight: 620;
   text-transform: uppercase;
 }
 
 .data-date strong {
-  margin-top: 5px;
-  font-size: 0.68rem;
+  margin-top: 7px;
   font-weight: 720;
 }
 

@@ -42,6 +42,10 @@ interface CommunityRingSegment extends GridLine {
 
 const ROTATION_ORBIT = -32
 const ROTATION_X = 27
+const MOBILE_BREAKPOINT = 640
+const MOBILE_ZOOM_SCALE = 1.5
+const DESKTOP_3D_ZOOM_SCALE = 1.75
+const MOBILE_TIMELINE_VERTICAL_SHIFT_SCALE = 1.5
 const COMMUNITY_Z_OFFSET = 0.16
 const COMMUNITY_RING_RADIUS = 0.205
 const COMMUNITY_RING_STEPS = 28
@@ -87,6 +91,17 @@ interface CameraViewState {
 interface StoredCameraState {
   key: string
   state: CameraViewState
+}
+
+interface FitViewResult {
+  state: {
+    target: [number, number, number]
+    zoom: number
+    minZoom: number
+    maxZoom: number
+  }
+  zoomScale: number
+  verticalOffset: number
 }
 
 function isClusterSummary(object: MapObject): object is ClusterSummary {
@@ -221,7 +236,7 @@ function fitView(bounds: MapBounds, size: MapSize, mode: MapMode, timelineVisibl
   const width = Math.max(1, size.width)
   const height = Math.max(1, size.height)
   const padding = mapPadding(size, timelineVisible)
-  const target: [number, number, number] = [
+  const baseTarget: [number, number, number] = [
     (bounds.minX + bounds.maxX) / 2,
     (bounds.minY + bounds.maxY) / 2,
     mode === '3d' ? (bounds.minZ + bounds.maxZ) / 2 : 0,
@@ -230,11 +245,11 @@ function fitView(bounds: MapBounds, size: MapSize, mode: MapMode, timelineVisibl
 
   const fits = (zoom: number) => {
     const viewport = mode === '2d'
-      ? new OrthographicViewport({ width, height, target, zoom, flipY: false })
+      ? new OrthographicViewport({ width, height, target: baseTarget, zoom, flipY: false })
       : new OrbitViewport({
           width,
           height,
-          target,
+          target: baseTarget,
           zoom,
           orbitAxis: 'Z',
           rotationOrbit: ROTATION_ORBIT,
@@ -258,8 +273,46 @@ function fitView(bounds: MapBounds, size: MapSize, mode: MapMode, timelineVisibl
     else high = candidate
   }
 
-  const zoom = Math.max(-1, Math.min(9.2, low - 0.08))
-  return { target, zoom, minZoom: Math.max(-2, zoom - 2.5), maxZoom: 10 }
+  const compact = size.width < MOBILE_BREAKPOINT
+  const requestedZoomScale = compact
+    ? timelineVisible || mode === '3d' ? MOBILE_ZOOM_SCALE : 1
+    : mode === '3d' ? DESKTOP_3D_ZOOM_SCALE : 1
+  const baseZoom = Math.max(-1, Math.min(9.2, low - 0.08))
+  const zoom = Math.max(-1, Math.min(9.2, baseZoom + Math.log2(requestedZoomScale)))
+  const zoomScale = 2 ** (zoom - baseZoom)
+  const verticalOffset = compact && timelineVisible
+    ? Math.max(0, (padding.bottom - padding.top) / 2) * MOBILE_TIMELINE_VERTICAL_SHIFT_SCALE
+    : 0
+  let target = baseTarget
+
+  if (verticalOffset > 0) {
+    const viewport = mode === '2d'
+      ? new OrthographicViewport({ width, height, target: baseTarget, zoom, flipY: false })
+      : new OrbitViewport({
+          width,
+          height,
+          target: baseTarget,
+          zoom,
+          orbitAxis: 'Z',
+          rotationOrbit: ROTATION_ORBIT,
+          rotationX: ROTATION_X,
+        })
+    const projectedTarget = viewport.project(baseTarget)
+    const shiftedTarget = viewport.unproject([
+      width / 2,
+      height / 2 + verticalOffset,
+      projectedTarget[2],
+    ])
+    if (shiftedTarget.every(Number.isFinite)) {
+      target = [shiftedTarget[0], shiftedTarget[1], shiftedTarget[2]]
+    }
+  }
+
+  return {
+    state: { target, zoom, minZoom: Math.max(-2, zoom - 2.5), maxZoom: 10 },
+    zoomScale,
+    verticalOffset,
+  } satisfies FitViewResult
 }
 
 export function SemanticMap({
@@ -282,7 +335,7 @@ export function SemanticMap({
   const deckRef = useRef<DeckGLRef>(null)
   const pointerStartRef = useRef<[number, number] | null>(null)
   const initialMeasureRef = useRef(false)
-  const fitCacheRef = useRef<{ key: string; state: ReturnType<typeof fitView> } | null>(null)
+  const fitCacheRef = useRef<{ key: string; result: FitViewResult } | null>(null)
   const [mapSize, setMapSize] = useState<MapSize>({ width: 960, height: 680 })
   const [fitSizeVersion, setFitSizeVersion] = useState(0)
 
@@ -317,14 +370,16 @@ export function SemanticMap({
     fitBounds.minZ,
     fitBounds.maxZ,
   ].map((value) => value.toFixed(6)).join('-')
-  const fitRequestKey = `${mode}-${fitKey}-${timelineVisible ? 'timeline' : 'map'}-${fitSizeVersion}`
+  const viewportClass = mapSize.width < MOBILE_BREAKPOINT ? 'mobile' : 'desktop'
+  const fitRequestKey = `${mode}-${fitKey}-${timelineVisible ? 'timeline' : 'map'}-${viewportClass}-${fitSizeVersion}`
   if (fitCacheRef.current?.key !== fitRequestKey) {
     fitCacheRef.current = {
       key: fitRequestKey,
-      state: fitView(fitBounds, mapSize, mode, timelineVisible),
+      result: fitView(fitBounds, mapSize, mode, timelineVisible),
     }
   }
-  const fitState = fitCacheRef.current.state
+  const fitResult = fitCacheRef.current.result
+  const fitState = fitResult.state
 
   const visibleClusterIds = useMemo(() => new Set(points.map((point) => point.clusterId)), [points])
   const visibleClusters = useMemo(
@@ -620,6 +675,10 @@ export function SemanticMap({
       data-fit-target-z={fitState.target[2].toFixed(4)}
       data-fit-rotation-orbit={mode === '3d' ? ROTATION_ORBIT.toFixed(4) : undefined}
       data-fit-rotation-x={mode === '3d' ? ROTATION_X.toFixed(4) : undefined}
+      data-fit-zoom-scale={fitResult.zoomScale.toFixed(3)}
+      data-fit-vertical-offset={fitResult.verticalOffset.toFixed(1)}
+      data-fit-viewport={viewportClass}
+      data-fit-context={timelineVisible ? 'timeline' : 'map'}
       data-camera-zoom={cameraViewState.zoom?.toFixed(4)}
       data-camera-target-x={cameraViewState.target?.[0].toFixed(4)}
       data-camera-target-y={cameraViewState.target?.[1].toFixed(4)}
