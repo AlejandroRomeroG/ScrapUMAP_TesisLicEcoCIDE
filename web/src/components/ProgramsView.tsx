@@ -15,6 +15,9 @@ type SimilarityHeatmapValue = [number, number, number, string, string]
 
 type ProgramMode = 'profile' | 'similarity'
 
+const COMPACT_PROGRAM_GRID_TOP = 14
+const COMPACT_PROGRAM_GRID_BOTTOM = 64
+
 function programAxisLabel(program: ProgramSummary): string {
   const prefix = program.level === 'Licenciatura' ? 'L' : program.level === 'Maestría' ? 'M' : 'D'
   return `${prefix} · ${shortProgram(program.degreeProgram)}`
@@ -73,8 +76,8 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
       grid: {
         left: gridLeft,
         right: compact ? 8 : 30,
-        top: compact ? 14 : 24,
-        bottom: compact ? 64 : 74,
+        top: compact ? COMPACT_PROGRAM_GRID_TOP : 24,
+        bottom: compact ? COMPACT_PROGRAM_GRID_BOTTOM : 74,
       },
       tooltip: {
         trigger: 'item',
@@ -156,8 +159,8 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
       grid: {
         left: gridLeft,
         right: compact ? 8 : 30,
-        top: compact ? 40 : 48,
-        bottom: compact ? 166 : 155,
+        top: compact ? COMPACT_PROGRAM_GRID_TOP : 48,
+        bottom: compact ? COMPACT_PROGRAM_GRID_BOTTOM : 155,
       },
       tooltip: {
         backgroundColor: '#111815',
@@ -200,6 +203,7 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
       },
       visualMap: {
         type: 'piecewise',
+        show: !compact,
         orient: 'horizontal',
         left: compact ? 'center' : gridLeft,
         top: compact ? 1 : 7,
@@ -296,6 +300,9 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
       className="analysis-view programs-view"
       data-similarity-x-label-count={mode === 'similarity' ? programLabels.length : undefined}
       data-similarity-x-label-strategy={mode === 'similarity' ? 'dom-vertical-all' : undefined}
+      data-compact-grid-top={COMPACT_PROGRAM_GRID_TOP}
+      data-compact-grid-bottom={COMPACT_PROGRAM_GRID_BOTTOM}
+      data-compact-grid-shared="true"
     >
       <div className="analysis-toolbar">
         <div>
@@ -317,7 +324,7 @@ export function ProgramsView({ analytics }: ProgramsViewProps) {
           <div className="chart-heading">
             <div>
               <h3>{mode === 'profile' ? 'Mezcla temática por programa' : 'Afinidad entre programas'}</h3>
-              <p>{mode === 'profile' ? 'Cada fila suma 100% de la producción del programa.' : 'Coseno entre distribuciones temáticas; 1 indica perfiles idénticos.'}</p>
+              <p>{mode === 'profile' ? 'Cada fila suma 100% de la producción del programa.' : 'Coseno entre distribuciones temáticas; 1 indica perfiles idénticos y los tonos más oscuros señalan mayor afinidad.'}</p>
             </div>
             <span>Fuente: Repositorio Digital CIDE</span>
           </div>

@@ -1157,10 +1157,11 @@
     right: 8px;
     bottom: 3px;
     left: 76px;
-    height: 158px;
+    height: 58px;
     display: grid;
     grid-template-columns: repeat(21, minmax(0, 1fr));
     align-items: start;
+    overflow: hidden;
     pointer-events: none;
   }
 
