@@ -4,6 +4,11 @@ import { Search, Users, X } from 'lucide-react'
 import { EChart, type ResponsiveChartOption } from './EChart'
 import type { AdvisorSummary, AnalyticsPayload } from '../types'
 import { clusterColor } from '../lib/colors'
+import {
+  createFacultyNudgeLayout,
+  FACULTY_NUDGE_X_LIMIT,
+  FACULTY_NUDGE_Y_LIMIT,
+} from '../lib/facultyLayout'
 import { formatNumber, formatPercent, includesAllSearchTerms, searchTerms } from '../lib/format'
 
 interface FacultyViewProps {
@@ -11,7 +16,7 @@ interface FacultyViewProps {
 }
 
 interface AdvisorClick {
-  value?: [number, number, number, string, number, string, number]
+  value?: [number, number, number, string, number, string, number, number, number, number]
 }
 
 const FACULTY_LABEL_MIN_THESES = 25
@@ -36,6 +41,7 @@ export function FacultyView({ analytics }: FacultyViewProps) {
     [analytics.advisors],
   )
   const visibleLabelAdvisors = queryTerms.length > 0 ? matchingAdvisors : defaultLabeledAdvisors
+  const nudgeLayout = useMemo(() => createFacultyNudgeLayout(analytics.advisors), [analytics.advisors])
   const selected = analytics.advisors.find((advisor) => advisor.name === selectedName) ?? analytics.advisors[0]
 
   const topics = useMemo(
@@ -56,13 +62,17 @@ export function FacultyView({ analytics }: FacultyViewProps) {
     const xAxisMaximum = Math.ceil(maximumTheses * 1.12 + 2)
     const directLabels = visibleLabelAdvisors.length <= 3
     const labelPlacements = directLabels
-      ? visibleLabelAdvisors.map((advisor) => ({
-          advisor,
-          x: advisor.thesisCount,
-          y: advisor.clusterCount,
-          position: advisor.thesisCount > xAxisMaximum * 0.72 ? 'left' as const : 'right' as const,
-          connector: false,
-        }))
+      ? visibleLabelAdvisors.map((advisor) => {
+          const coordinate = nudgeLayout.coordinates.get(advisor.name)
+          const x = coordinate?.x ?? advisor.thesisCount
+          return {
+            advisor,
+            x,
+            y: coordinate?.y ?? advisor.clusterCount,
+            position: x > xAxisMaximum * 0.72 ? 'left' as const : 'right' as const,
+            connector: false,
+          }
+        })
       : [
           {
             position: 'left' as const,
@@ -92,15 +102,19 @@ export function FacultyView({ analytics }: FacultyViewProps) {
       type: 'scatter',
       data: advisors.map((advisor) => {
         const matches = matchingNames === null || matchingNames.has(advisor.name)
+        const coordinate = nudgeLayout.coordinates.get(advisor.name)
         return {
           value: [
-            advisor.thesisCount,
-            advisor.clusterCount,
+            coordinate?.x ?? advisor.thesisCount,
+            coordinate?.y ?? advisor.clusterCount,
             advisor.programCount,
             advisor.name,
             advisor.mainClusterId,
             advisor.mainCluster,
             matches ? 1 : 0,
+            advisor.thesisCount,
+            advisor.clusterCount,
+            coordinate?.groupSize ?? 1,
           ],
           itemStyle: matches ? undefined : {
             color: '#9ca59f',
@@ -110,8 +124,8 @@ export function FacultyView({ analytics }: FacultyViewProps) {
           },
         }
       }),
-      symbolSize: (value: [number, number, number, string, number, string, number]) => {
-        const size = 7 + Math.sqrt(value[0]) * 2.1 + value[2] * 0.65
+      symbolSize: (value: [number, number, number, string, number, string, number, number]) => {
+        const size = 7 + Math.sqrt(value[7]) * 2.1 + value[2] * 0.65
         return compact ? Math.max(5, size * 0.72) : size
       },
       itemStyle: {
@@ -142,6 +156,9 @@ export function FacultyView({ analytics }: FacultyViewProps) {
           advisor.mainClusterId,
           advisor.mainCluster,
           1,
+          advisor.thesisCount,
+          advisor.clusterCount,
+          nudgeLayout.coordinates.get(advisor.name)?.groupSize ?? 1,
         ],
         label: { position },
       })),
@@ -166,7 +183,12 @@ export function FacultyView({ analytics }: FacultyViewProps) {
         data: labelPlacements
           .filter(({ connector }) => connector)
           .map(({ advisor, x, y }) => [
-            { coord: [advisor.thesisCount, advisor.clusterCount] },
+            {
+              coord: [
+                nudgeLayout.coordinates.get(advisor.name)?.x ?? advisor.thesisCount,
+                nudgeLayout.coordinates.get(advisor.name)?.y ?? advisor.clusterCount,
+              ],
+            },
             { coord: [x, y] },
           ]),
       },
@@ -189,7 +211,10 @@ export function FacultyView({ analytics }: FacultyViewProps) {
         formatter: (params: unknown) => {
           const value = (params as AdvisorClick).value
           if (!value) return ''
-          return `<strong>${value[3]}</strong><br/>${formatNumber(value[0])} tesis · ${value[1]} temas · ${value[2]} programas<br/>Principal: ${value[5]}`
+          const nudgeNote = value[9] > 1
+            ? '<br/><span style="opacity:.72">Empate exacto separado visualmente (&lt;1 unidad por eje)</span>'
+            : ''
+          return `<strong>${value[3]}</strong><br/>${formatNumber(value[7])} tesis · ${value[8]} temas · ${value[2]} programas<br/>Principal: ${value[5]}${nudgeNote}`
         },
       },
       xAxis: {
@@ -221,7 +246,7 @@ export function FacultyView({ analytics }: FacultyViewProps) {
       },
       series: [...pointSeries, labelSeries],
     }
-  }, [analytics.advisors, analytics.clusters, matchingNames, visibleLabelAdvisors])
+  }, [analytics.advisors, analytics.clusters, matchingNames, nudgeLayout, visibleLabelAdvisors])
 
   function handleClick(params: unknown) {
     const value = (params as AdvisorClick).value
@@ -238,6 +263,13 @@ export function FacultyView({ analytics }: FacultyViewProps) {
       data-default-label-count={defaultLabeledAdvisors.length}
       data-visible-label-count={visibleLabelAdvisors.length}
       data-label-overlap="callout-columns"
+      data-nudge-method="exact-coordinate-sunflower"
+      data-nudged-coordinate-groups={nudgeLayout.duplicateGroupCount}
+      data-nudged-point-count={nudgeLayout.nudgedPointCount}
+      data-nudge-max-x={nudgeLayout.maxOffsetX.toFixed(3)}
+      data-nudge-max-y={nudgeLayout.maxOffsetY.toFixed(3)}
+      data-nudge-limit-x={FACULTY_NUDGE_X_LIMIT}
+      data-nudge-limit-y={FACULTY_NUDGE_Y_LIMIT}
     >
       <div className="analysis-toolbar faculty-toolbar">
         <div>
@@ -261,7 +293,7 @@ export function FacultyView({ analytics }: FacultyViewProps) {
           <div className="chart-heading">
             <div>
               <h3>Volumen y amplitud temática</h3>
-              <p>Cada punto es una persona; el tamaño incorpora también el número de programas. Se muestran nombres a partir de 25 tesis.</p>
+              <p>Cada punto es una persona; el tamaño incorpora también el número de programas. Los empates exactos se separan menos de una unidad por eje. Se muestran nombres a partir de 25 tesis.</p>
             </div>
             <span>
               {queryTerms.length > 0

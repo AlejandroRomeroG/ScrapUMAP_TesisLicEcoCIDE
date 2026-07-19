@@ -175,6 +175,23 @@ async function expectedFacultyLabelNames(page: Page, minimumTheses = 25): Promis
   }, minimumTheses)
 }
 
+async function expectedFacultyNudgeStats(page: Page): Promise<{ groups: number; affected: number }> {
+  return page.evaluate(async () => {
+    const response = await fetch('/data/analytics.json')
+    const payload = await response.json() as { advisors: Array<{ thesisCount: number; clusterCount: number }> }
+    const groups = new Map<string, number>()
+    for (const advisor of payload.advisors) {
+      const key = `${advisor.thesisCount}|${advisor.clusterCount}`
+      groups.set(key, (groups.get(key) ?? 0) + 1)
+    }
+    const duplicateSizes = [...groups.values()].filter((count) => count > 1)
+    return {
+      groups: duplicateSizes.length,
+      affected: duplicateSizes.reduce((total, count) => total + count, 0),
+    }
+  })
+}
+
 async function expectClusterVisibilityPreservesCamera(page: Page, token: string) {
   const canvas = activeSemanticCanvas(page)
   const initialCamera = await readCameraState(page)
@@ -612,6 +629,28 @@ test('desktop atlas renders every analytical surface and animation control', asy
     'data-default-label-count',
     String(expectedFacultyLabels.length),
   )
+  const expectedNudgeStats = await expectedFacultyNudgeStats(page)
+  await expect(page.locator('.faculty-view')).toHaveAttribute('data-nudge-method', 'exact-coordinate-sunflower')
+  await expect(page.locator('.faculty-view')).toHaveAttribute(
+    'data-nudged-coordinate-groups',
+    String(expectedNudgeStats.groups),
+  )
+  await expect(page.locator('.faculty-view')).toHaveAttribute(
+    'data-nudged-point-count',
+    String(expectedNudgeStats.affected),
+  )
+  const nudgeBounds = await page.locator('.faculty-view').evaluate((element) => ({
+    maxX: Number(element.getAttribute('data-nudge-max-x')),
+    maxY: Number(element.getAttribute('data-nudge-max-y')),
+    limitX: Number(element.getAttribute('data-nudge-limit-x')),
+    limitY: Number(element.getAttribute('data-nudge-limit-y')),
+  }))
+  expect(nudgeBounds.maxX).toBeGreaterThan(0)
+  expect(nudgeBounds.maxY).toBeGreaterThan(0)
+  expect(nudgeBounds.maxX).toBeLessThan(1)
+  expect(nudgeBounds.maxY).toBeLessThan(1)
+  expect(nudgeBounds.maxX).toBeLessThanOrEqual(nudgeBounds.limitX)
+  expect(nudgeBounds.maxY).toBeLessThanOrEqual(nudgeBounds.limitY)
   const accessibleFacultyLabels = page
     .getByRole('list', { name: 'Nombres mostrados en la gráfica' })
     .getByRole('listitem')
